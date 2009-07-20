@@ -1,4 +1,12 @@
-﻿package {
+﻿/*
+* Copyright 2009 Shaun Pauley
+* 
+* 
+* 
+* 
+*/
+
+package {
 	import CellStuff.*;
 	
 	import flash.display.Stage;
