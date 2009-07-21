@@ -26,7 +26,7 @@
     <project_file path='CellStuff\CellPrit_White.as' filetype='as'/>
     <project_file path='CellStuff\CellPrit_Worm.as' filetype='as'/>
   </project_folder>
-  <project_folder expanded='true' name='CellProt'>
+  <project_folder expanded='false' name='CellProt'>
     <project_file path='CellStuff\CellProt.as' filetype='as'/>
     <project_file path='CellStuff\CellProt_Attack.as' filetype='as'/>
     <project_file path='CellStuff\CellProt_Boss.as' filetype='as'/>
@@ -41,6 +41,7 @@
   </project_folder>
   <project_file path='CellStuff\CellBackground.as' filetype='as'/>
   <project_file path='CellStuff\CellCreator.as' filetype='as'/>
+  <project_file path='CellStuff\CellGrid.as' filetype='as'/>
   <project_file path='CellStuff\CellGridDisplay.as' filetype='as'/>
   <project_file path='CellStuff\CellNucleus.as' filetype='as'/>
   <project_file path='CellStuff\CellSingle.as' filetype='as'/>

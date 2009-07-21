@@ -1,9 +1,8 @@
 ﻿/*
 * Copyright 2009 Shaun Pauley
 * 
-* 
-* 
-* 
+* As this isn't really published as of yet, I'm still figuring out licences.  
+* So currently code should be used for personal use only and not for commercial use.
 */
 
 package {

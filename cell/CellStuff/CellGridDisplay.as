@@ -1,4 +1,10 @@
-﻿package CellStuff {
+﻿/*
+ * todo:
+ * - separate class fom grid::speparate grid from the physics class
+ * - make more independent and remove as many public vars as possible
+ * - make this class member's more opaque and use access functions instead.
+ */
+package CellStuff {
 	
 	import flash.display.Stage;
 	import flash.display.MovieClip;
