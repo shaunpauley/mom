@@ -183,6 +183,10 @@ package {
 		// basically, we want to create our cell and a cell grid and other things
 		public function CellWorld():void {
 			
+			if (c_debug) {
+				CellGrid.UnitTest();
+			}
+			
 			myStage = stage;
 			
 			// sound list
