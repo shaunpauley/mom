@@ -15,248 +15,107 @@ package CellStuff {
 		
 		private var m_stockCells:Array;
 		
-		private var m_topLeft:Object;
-		private var m_topRight:Object;
-		private var m_bottomLeft:Object;
-		private var m_bottomRight:Object;
+		private var m_cells:Array;
+		
+		private var m_idcount:int;
 		
 		// consts
 		private static const c_defaultCols:Number = 10;
 		private static const c_defaultRows:Number = 10;
 		
-		/* 
-		* Constructor 
+		/* Constructor 
 		*/
 		public function CellGrid(gridData:Object):void {
+			// init
+			m_stockCells = new Array();
+			
+			m_cells = new Array();
+			
+			m_idcount = 0;
+			
+			ModifyGrid(gridData);
+		}
+		
+		/* ModifyGrid
+		* Modifies the entire grid, so that we can reuse grids
+		*/
+		public function ModifyGrid(gridData:Object):void {
 			// assign
 			m_gridData = gridData;
 			
 			m_cols = gridData.cols;
 			m_rows = gridData.rows;
 			
+			
 			// init
-			m_stockCells = new Array();
+			while(m_cells.length) {
+				m_stockCells.push(m_cells.pop());
+			}
 			
-			m_topLeft = CreateGridCell();
-			m_topRight = m_topLeft;
-			m_bottomLeft = m_topLeft;
-			m_bottomRight = m_topLeft;
+			for (var r:int = 0; r < m_rows; ++r) {
+				for (var c:int = 0; c < m_cols; ++c) {
+					m_cells[c+r*m_cols] = CreateGridCell(c, r);
+				}
+			}
 			
-			
+			for (r = 0; r < m_rows; ++r) {
+				for (c = 0; c < m_cols; ++c) {
+					ModifyGridCell(m_cells[c+r*m_cols]);
+				}
+			}
 		}
 		
+		
 		/* CreateGridCell 
-		* using a stock array we can preserve deleted grid cells in the case where we need
-		* to grow and shrink the grid cells rapidly
+		* Creates a new GridCell.
+		* For resuability and to save space we use implement this to pull from the stock, or create
+		* one if there isn't any in the stock.
 		*/
-		private function CreateGridCell(top:Object = null,
-		bottom:Object = null,
-		left:Object = null,
-		right:Object = null):Object {
-			
-			var gridCell:Object = null;
-			
+		private function CreateGridCell(c:int, r:int):Object {
 			if (m_stockCells.length > 0) {
-				gridCell = m_stockCells.pop();
-				gridCell.top = top;
-				gridCell.bottom = bottom;
-				gridCell.left = left;
-				gridCell.right = right;
-				
+				var newCell:Object = m_stockCells.pop();
 			} else {
-				gridCell = {top:top, bottom:bottom, left:left, right:right};
-				
+				newCell = {col:c, row:r, id:++m_idcount};
 			}
 			
-			if (top) {
-				top.bottom = gridCell;
+			return ModifyGridCell(newCell);
+		}
+		
+		/* ModifyGridCell
+		* Modifies a grid cell for creation.
+		* This resets the locations on a grid cell.
+		*/
+		private function ModifyGridCell(gridCell:Object):Object {
+			gridCell.col %= m_cols;
+			gridCell.row %= m_rows;
+			gridCell.top = GetGridCell(gridCell.col, gridCell.row-1);
+			gridCell.bottom = GetGridCell(gridCell.col, gridCell.row+1);
+			gridCell.left = GetGridCell(gridCell.col-1, gridCell.row);
+			gridCell.right = GetGridCell(gridCell.col+1, gridCell.row);
+			
+			if (gridCell.top) {
+				gridCell.top.bottom = gridCell;
 			}
-			if (bottom) {
-				bottom.top = gridCell;
+			if (gridCell.bottom) {
+				gridCell.bottom.top = gridCell;
 			}
-			if (left) {
-				left.right = gridCell;
+			if (gridCell.left) {
+				gridCell.left.right = gridCell;
 			}
-			if (right) {
-				right.left = gridCell;
+			if (gridCell.right) {
+				gridCell.right.left = gridCell;
 			}
 			
 			return gridCell;
 		}
 		
-		/* GrowGrid
-		* grow our grid, only takes positive integers
-		**/
-		private function GrowGrid(numTop:int, numBottom:int, numLeft:int, numRight:int):void {
-			
-			// travel right creating top cells;
-			while (numTop) {
-				var currentCell:Object = m_topLeft;
-				var previousCell:Object = null;
-				while (currentCell) {
-					// create top cells
-					currentCell.top = CreateGridCell(null, currentCell, previousCell);
-					previousCell = currentCell.top;
-					currentCell = currentCell.right;
-				}
-				m_topLeft = m_topLeft.top;
-				m_topRight = m_topRight.top;
-				--numTop;
-			}
-			
-			// travel right create bottom cells;
-			while (numBottom) {
-				currentCell = m_bottomLeft;
-				previousCell = null;
-				while (currentCell) {
-					// create bottom cells
-					currentCell.bottom = CreateGridCell(currentCell, null, previousCell);
-					previousCell = currentCell.bottom;
-					currentCell = currentCell.right;
-				}
-				m_bottomLeft = m_bottomLeft.bottom;
-				m_bottomRight = m_bottomRight.bottom;
-				--numBottom;
-			}
-			
-			// travel down creating left cells;
-			while (numLeft) {
-				currentCell = m_topLeft;
-				previousCell = null;
-				while (currentCell) {
-					// create left cells
-					currentCell.left = CreateGridCell(previousCell, null, null, currentCell);
-					previousCell = currentCell.left;
-					currentCell = currentCell.bottom;
-				}
-				m_topLeft = m_topLeft.left;
-				m_bottomLeft = m_bottomLeft.left;
-				--numLeft;
-			}
-			
-			// travel down creating right cells;
-			while (numRight) {
-				currentCell = m_topRight;
-				previousCell = null;
-				while (currentCell) {
-					// create right cells
-					currentCell.right = CreateGridCell(previousCell, null, currentCell, null);
-					previousCell = currentCell.right;
-					currentCell = currentCell.bottom;
-				}
-				m_topRight = m_topRight.right;
-				m_bottomRight = m_bottomRight.right;
-				--numRight;
-			}
-		}
-		
-		/* ShrinkGrid
-		* shrinks our grid.  It will not shrink past 1x1 grid.  Only takes positive integers
+		/* GetGridCell
+		* Returns a grid cell.
+		* Even if the grid cell is off the grid, it preserves wrapping around.
+		* NOTE: Only takes positive integer values, for some reason flash does not preserve negative moduli
 		*/
-		private function ShrinkGrid(numTop:int, numBottom:int, numLeft:int, numRight:int):void {
-			
-			while(numTop) {
-				if (!m_topRight.bottom || !m_topLeft.bottom) {
-					break;
-				}
-				var currentCell:Object = m_topRight;
-				m_topRight = m_topRight.bottom;
-				m_topLeft = m_topLeft.bottom;
-				
-				while(currentCell) {
-					var nextCell:Object = currentCell.left;
-					RemoveGridCell(currentCell);
-					currentCell = nextCell;
-				}
-				--numTop;
-			}
-			
-			while(numBottom) {
-				if (!m_bottomRight.top || !m_bottomLeft.top) {
-					break;
-				}
-				currentCell = m_bottomRight;
-				m_bottomRight = m_bottomRight.top;
-				m_bottomLeft = m_bottomLeft.top;
-				
-				while(currentCell) {
-					nextCell = currentCell.left;
-					RemoveGridCell(currentCell);
-					currentCell = nextCell;
-				}
-				--numBottom;
-			}
-			
-			while(numLeft) {
-				if (!m_topLeft.right|| !m_bottomLeft.right) {
-					break;
-				}
-				currentCell = m_topLeft;
-				
-				m_topLeft = m_topLeft.right;
-				m_bottomLeft = m_bottomLeft.right;
-				
-				while(currentCell) {
-					nextCell = currentCell.bottom;
-					RemoveGridCell(currentCell);
-					currentCell = nextCell;
-				}
-				--numLeft;
-			}
-			
-			while(numRight) {
-				if (!m_topRight.left|| !m_bottomRight.left) {
-					break;
-				}
-				currentCell = m_topRight;
-				
-				m_topRight = m_topRight.left;
-				m_bottomRight = m_bottomRight.left;
-				
-				while(currentCell) {
-					nextCell = currentCell.bottom;
-					RemoveGridCell(currentCell);
-					currentCell = nextCell;
-				}
-				--numRight;
-			}
-			
-			if (!m_topLeft && !m_topRight && !m_bottomLeft && !m_bottomRight) {
-				m_topLeft = CreateGridCell();
-				m_topRight = m_topLeft;
-				m_bottomLeft = m_topLeft;
-				m_bottomRight = m_topLeft;
-			} else if (!m_topLeft || !m_topRight || !m_bottomLeft && !m_bottomRight) {
-				throw(new Error("ShrinkGrid error: missing reference for grid corner (not possible)"));
-			}
-		}
-		
-		/* RemoveGridCell
-		* frees a grid cell and puts it into the stock so it can be flushed later.
-		* (This is sort of a a way to control Garbage Collecting, and may be useful later)
-		*/
-		private function RemoveGridCell(gridCell:Object):void {
-			if (gridCell.top) {
-				gridCell.top.bottom = null;
-			}
-			gridCell.top = null;
-			
-			if (gridCell.bottom) {
-				gridCell.bottom.top = null;
-			}
-			gridCell.bottom = null;
-			
-			if (gridCell.left) {
-				gridCell.left.right = null;
-			}
-			gridCell.left = null;
-			
-			if (gridCell.right) {
-				gridCell.right.left = null;
-			}
-			gridCell.right = null;
-			
-			m_stockCells.push(gridCell);
+		private function GetGridCell(c:int, r:int):Object {
+			return m_cells[c%m_cols + (r%m_rows)*m_cols];
 		}
 		
 		/* FlushStock
@@ -267,6 +126,7 @@ package CellStuff {
 				m_stockCells.pop();
 			}
 		}
+		
 		
 		/*
 		* GridDataObject
@@ -281,78 +141,56 @@ package CellStuff {
 		
 		// debug
 		public function ToString():String {
-			var str:String = "";
-			var count:int = 1;
-			var currentCell:Object = m_topLeft;
-			while(currentCell) {
-				var currentRowCell:Object = currentCell;
-				while (currentRowCell) {
-					str += "\t" + count;
-					str += (currentRowCell.top?"T":"");
-					str += (currentRowCell.bottom?"B":"");
-					str += (currentRowCell.left?"L":"");
-					str += (currentRowCell.right?"R":"");
-					
-					currentRowCell = currentRowCell.right;
-					++count;
+			var str:String = "CellGrid: " + m_cols + ", " + m_rows + "\n";
+			
+			for (var r:int = 0; r < m_rows; ++r) {
+				for (var c:int = 0; c < m_cols; ++c) {
+					str += GridCellToString( GetGridCell(c, r) );
 				}
 				str += "\n";
-				currentCell = currentCell.bottom;
 			}
 			
+			return str;
+		}
+		
+		// use this to display debug info for individual gridcell objects
+		public static function GridCellToString(gridCell:Object):String {
+			var str:String = "\t";
+			str += gridCell.id;
+			str += (gridCell.top?"T":"");
+			str += (gridCell.bottom?"B":"");
+			str += (gridCell.left?"L":"");
+			str += (gridCell.right?"R":"");
 			return str;
 		}
 		
 		// unit test
 		public static function UnitTest():void {
 			trace("***BEGIN CellGrid UNIT TEST***");
-			var testGrid:CellGrid = new CellGrid( CreateGridDataFull(1, 1) );
+			var testGrid:CellGrid = new CellGrid( CreateGridDataFull(10, 10) );
 			trace("TEST 1) INIT");
 			trace(testGrid.ToString());
 			
-			trace("TEST 2) GROW SIMPLE");
-			testGrid.GrowGrid(0, 1, 0, 1);
-			trace(testGrid.ToString());
+			trace("TEST 2) GET CELL, 5, 5");
+			trace( GridCellToString(testGrid.GetGridCell(5, 5)) );
 			
-			trace("TEST 3) GROW SIMPLE MORE");
-			testGrid.GrowGrid(1, 0, 1, 0);
-			trace(testGrid.ToString());
+			trace("TEST 3) GET CELL, 0, 0");
+			trace( GridCellToString(testGrid.GetGridCell(0, 0)) );
 			
-			trace("TEST 4) GROW COMPLEX");
-			testGrid.GrowGrid(2, 3, 4, 5);
-			trace(testGrid.ToString());
+			trace("TEST 4) GET CELL, 0, endr");
+			trace( GridCellToString(testGrid.GetGridCell(0, testGrid.m_rows-1)) );
 			
-			trace("TEST 5) SHRINK COMPLEX (ANSWER IS 3)");
-			testGrid.ShrinkGrid(2, 3, 4, 5);
-			trace(testGrid.ToString());
+			trace("TEST 5) GET CELL, endc, 0");
+			trace( GridCellToString(testGrid.GetGridCell(testGrid.m_cols-1, 0)) );
 			
-			trace("TEST 6) SHRINK SIMPLE MORE (ANSWER IS 2)");
-			testGrid.ShrinkGrid(1, 0, 1, 0);
-			trace(testGrid.ToString());
+			trace("TEST 6) GET CELL, endc, endr");
+			trace( GridCellToString(testGrid.GetGridCell(testGrid.m_cols-1, testGrid.m_rows-1)) );
 			
-			trace("TEST 7) SHRINK ALL");
-			testGrid.ShrinkGrid(0, 1, 0, 1);
-			trace(testGrid.ToString());
+			trace("TEST 7) GET CELL, 100, 100");
+			trace( GridCellToString(testGrid.GetGridCell(100, 100)) );
 			
-			trace("TEST 8) SHRINK PAST ALL");
-			testGrid.ShrinkGrid(10, 10, 10, 10);
-			trace(testGrid.ToString());
-			
-			trace("TEST 9) GROW AFTER SHRINK");
-			testGrid.GrowGrid(5, 0, 0, 5);
-			trace(testGrid.ToString());
-			
-			trace("TEST 10) STOCK SIZE");
-			trace(testGrid.m_stockCells.length);
-			
-			trace("TEST 11) STOCK FLUSH");
-			testGrid.FlushStock();
-			trace("num in stock: " + testGrid.m_stockCells.length);
-			
-			trace("TEST 12) GROW AFTER STOCK FLUSH");
-			testGrid.GrowGrid(0, 3, 3, 0);
-			trace(testGrid.ToString());
-			trace("num in stock: " + testGrid.m_stockCells.length);
+			trace("TEST 8) GET CELL, 134, 63");
+			trace( GridCellToString(testGrid.GetGridCell(134, 63)) );
 			
 			trace("***END CellGrid UNIT TEST***");
 		}
