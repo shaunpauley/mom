@@ -37,7 +37,8 @@ package CellStuff {
 		}
 		
 		/* ModifyGrid
-		* Modifies the entire grid, so that we can reuse grids
+		* Modifies the entire grid.
+		* We can use this for reuse or reseting a grid
 		*/
 		public function ModifyGrid(gridData:Object):void {
 			// assign

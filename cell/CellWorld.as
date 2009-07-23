@@ -184,7 +184,7 @@ package {
 		public function CellWorld():void {
 			
 			if (c_debug) {
-				CellGrid.UnitTest();
+				CellGridLocations.UnitTest();
 			}
 			
 			myStage = stage;
