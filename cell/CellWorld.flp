@@ -44,6 +44,7 @@
   <project_file path='CellStuff\CellGrid.as' filetype='as'/>
   <project_file path='CellStuff\CellGridDisplay.as' filetype='as'/>
   <project_file path='CellStuff\CellGridLocations.as' filetype='as'/>
+  <project_file path='CellStuff\CellGridViewer.as' filetype='as'/>
   <project_file path='CellStuff\CellNucleus.as' filetype='as'/>
   <project_file path='CellStuff\CellSingle.as' filetype='as'/>
   <project_file path='CellStuff\CellSingle_Enemy.as' filetype='as'/>

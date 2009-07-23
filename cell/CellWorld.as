@@ -183,10 +183,6 @@ package {
 		// basically, we want to create our cell and a cell grid and other things
 		public function CellWorld():void {
 			
-			if (c_debug) {
-				CellGridLocations.UnitTest();
-			}
-			
 			myStage = stage;
 			
 			// sound list
@@ -331,6 +327,11 @@ package {
 			addChild(myLoadingScreen);
 			
 			this.root.loaderInfo.addEventListener(Event.COMPLETE, loadingComplete);
+			
+			if (c_debug) {
+				CellGridLocations.UnitTest();
+				CellGridViewer.UnitTest(this);
+			}
 		}
 		
 		/* Loading Button */

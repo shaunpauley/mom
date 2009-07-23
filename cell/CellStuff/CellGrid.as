@@ -10,8 +10,8 @@ package CellStuff {
 		
 		private var m_gridData:Object;
 		
-		private var m_cols:int;
-		private var m_rows:int;
+		protected var m_cols:int;
+		protected var m_rows:int;
 		
 		private var m_stockCells:Array;
 		
@@ -33,14 +33,14 @@ package CellStuff {
 			
 			m_idcount = 0;
 			
-			ModifyGrid(gridData);
+			ResetGrid(gridData);
 		}
 		
-		/* ModifyGrid
-		* Modifies the entire grid.
+		/* ResetGrid
+		* Resets the entire grid.
 		* We can use this for reuse or reseting a grid
 		*/
-		public function ModifyGrid(gridData:Object):void {
+		private function ResetGrid(gridData:Object):void {
 			// assign
 			m_gridData = gridData;
 			
@@ -50,7 +50,7 @@ package CellStuff {
 			
 			// init
 			while(m_cells.length) {
-				m_stockCells.push(m_cells.pop());
+				RemoveGridCell(m_cells.pop());
 			}
 			
 			for (var r:int = 0; r < m_rows; ++r) {
@@ -59,13 +59,13 @@ package CellStuff {
 				}
 			}
 			
+			// we need to reset all grid cells again to complete linking
 			for (r = 0; r < m_rows; ++r) {
 				for (c = 0; c < m_cols; ++c) {
-					ModifyGridCell(m_cells[c+r*m_cols]);
+					ResetGridCell(m_cells[c+r*m_cols]);
 				}
 			}
 		}
-		
 		
 		/* CreateGridCell 
 		* Creates a new GridCell.
@@ -76,23 +76,27 @@ package CellStuff {
 			if (m_stockCells.length > 0) {
 				var newCell:Object = m_stockCells.pop();
 			} else {
-				newCell = {col:c, row:r, id:++m_idcount};
+				newCell = {col:c, row:r, id:++m_idcount, objects:new Array()};
 			}
 			
-			return ModifyGridCell(newCell);
+			return ResetGridCell(newCell);
 		}
 		
-		/* ModifyGridCell
-		* Modifies a grid cell for creation.
+		/* ResetGridCell
+		* Resets a grid cell for creation.
 		* This resets the locations on a grid cell.
 		*/
-		private function ModifyGridCell(gridCell:Object):Object {
+		private function ResetGridCell(gridCell:Object):Object {
 			gridCell.col %= m_cols;
 			gridCell.row %= m_rows;
 			gridCell.top = GetGridCell(gridCell.col, gridCell.row-1);
 			gridCell.bottom = GetGridCell(gridCell.col, gridCell.row+1);
 			gridCell.left = GetGridCell(gridCell.col-1, gridCell.row);
 			gridCell.right = GetGridCell(gridCell.col+1, gridCell.row);
+			
+			while(gridCell.objects.length) {
+				gridCell.objects.pop();
+			}
 			
 			if (gridCell.top) {
 				gridCell.top.bottom = gridCell;
@@ -115,8 +119,55 @@ package CellStuff {
 		* Even if the grid cell is off the grid, it preserves wrapping around.
 		* NOTE: Only takes positive integer values, for some reason flash does not preserve negative moduli
 		*/
-		private function GetGridCell(c:int, r:int):Object {
+		protected function GetGridCell(c:int, r:int):Object {
 			return m_cells[c%m_cols + (r%m_rows)*m_cols];
+		}
+		
+		/* AddObject
+		* adds any object to the list of objects in a grid cell
+		*/
+		public function AddObject(gridCell:Object, object:*):void {
+			gridCell.objects.push(object);
+		}
+		
+		/* RemoveObject
+		* removes the object if exists from the grid cell
+		*/
+		public function RemoveObject(gridCell:Object, object:*):void {
+			var i:int = gridCell.objects.indexOf(object);
+			if (i > 0) {
+				gridCell.objects.splice(i, 1);
+			}
+		}
+		
+		/* RemoveGridCell
+		* removes the grid cell's adjacent links
+		* and places the grid cell on the stock.
+		* Note, that this does not actually remove the cell from the array of cells.
+		*/
+		private function RemoveGridCell(gridCell:Object):void {
+			if (gridCell.top) {
+				gridCell.top.bottom = null;
+				gridCell.top = null;
+			}
+			if (gridCell.bottom) {
+				gridCell.bottom.top = null;
+				gridCell.bottom = null;
+			}
+			if (gridCell.left) {
+				gridCell.left.right = null;
+				gridCell.left = null;
+			}
+			if (gridCell.right) {
+				gridCell.right.left = null;
+				gridCell.right = null;
+			}
+			
+			while(gridCell.objects.length) {
+				gridCell.objects.pop();
+			}
+			
+			m_stockCells.push(gridCell);
 		}
 		
 		/* FlushStock
