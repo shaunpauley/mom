@@ -20,8 +20,8 @@ package CellStuff {
 		private var m_idcount:int;
 		
 		// consts
-		private static const c_defaultCols:Number = 10;
-		private static const c_defaultRows:Number = 10;
+		private static const c_defaultCols:Number = 20;
+		private static const c_defaultRows:Number = 20;
 		
 		/* Constructor 
 		*/
@@ -194,12 +194,21 @@ package CellStuff {
 		// debug
 		public function ToString():String {
 			var str:String = "CellGrid: " + m_cols + ", " + m_rows + "\n";
+			var count:int = 0;
 			
 			for (var r:int = 0; r < m_rows; ++r) {
 				for (var c:int = 0; c < m_cols; ++c) {
 					str += GridCellToString( GetGridCell(c, r) );
+					if (count++ > 500) {
+						str += "...";
+						break;
+					}
 				}
 				str += "\n";
+				
+				if (count > 500) {
+					break;
+				}
 			}
 			
 			return str;

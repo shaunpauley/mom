@@ -46,6 +46,7 @@ package {
 		
 		private var myToolTip:HelpToolTip;
 		
+		private var myViewer:CellGridViewer;
 		
 		// keyboard handling
 		private var isKeyDown:Boolean;
@@ -136,6 +137,8 @@ package {
 		public static const c_key_a:uint	= 65;
 		public static const c_key_d:uint	= 68;
 		
+		public static const c_key_j:uint		= 74;
+		public static const c_key_k:uint		= 75;
 		public static const c_key_n:uint		= 78;
 		public static const c_key_m:uint		= 77;
 		public static const c_key_comma:uint	= 188;
@@ -330,8 +333,12 @@ package {
 			
 			if (c_debug) {
 				CellGridLocations.UnitTest();
-				CellGridViewer.UnitTest(this);
+				//CellGridViewer.UnitTest(myWorldDisplay);
+				myViewer = new CellGridViewer( CellGridViewer.CreateViewerData() );
+				myWorldDisplay.addChild(myViewer);
 			}
+			
+			
 		}
 		
 		/* Loading Button */
@@ -941,10 +948,24 @@ package {
 			isKeyZoomIn &&= !(event.keyCode == c_key_1);
 			isKeyZoomOut &&= !(event.keyCode == c_key_2);
 			
+			/*
 			if (event.keyCode == c_key_n) {
 				nextWorldLevel();
 			} else if (event.keyCode == c_key_m) {
 				previousWorldLevel();
+			}
+			*/
+			
+			if (event.keyCode == c_key_n) {
+				myViewer.GrowViewer(5, 5);
+			} else if (event.keyCode == c_key_m) {
+				myViewer.ShrinkViewer(5, 5);
+			}
+			
+			if (event.keyCode == c_key_j) {
+				myViewer.MoveViewer(-5, 0);
+			} else if (event.keyCode == c_key_k) {
+				myViewer.MoveViewer(5, 0);
 			}
 		}
 		
