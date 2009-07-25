@@ -184,8 +184,6 @@ package CellStuff {
 			return m_cellHeight;
 		}
 		
-		
-		
 		/*
 		* GridDataObject
 		*/

@@ -42,6 +42,7 @@
   <project_file path='CellStuff\CellBackground.as' filetype='as'/>
   <project_file path='CellStuff\CellCreator.as' filetype='as'/>
   <project_file path='CellStuff\CellGrid.as' filetype='as'/>
+  <project_file path='CellStuff\CellGridCover.as' filetype='as'/>
   <project_file path='CellStuff\CellGridDisplay.as' filetype='as'/>
   <project_file path='CellStuff\CellGridLocations.as' filetype='as'/>
   <project_file path='CellStuff\CellGridViewer.as' filetype='as'/>
@@ -50,6 +51,7 @@
   <project_file path='CellStuff\CellSingle_Enemy.as' filetype='as'/>
   <project_file path='CellStuff\CellSingle_Player.as' filetype='as'/>
   <project_file path='CellStuff\CellTextHandler.as' filetype='as'/>
+  <project_file path='CellStuff\CellViewCover.as' filetype='as'/>
   <project_file path='CellWorld.as' filetype='as'/>
   <project_file path='CellStuff\CellWorldMap.as' filetype='as'/>
   <project_file path='CellStuff\GridObject.as' filetype='as'/>

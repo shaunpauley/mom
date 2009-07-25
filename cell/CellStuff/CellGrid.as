@@ -119,7 +119,7 @@ package CellStuff {
 		* Even if the grid cell is off the grid, it preserves wrapping around.
 		* NOTE: Only takes positive integer values, for some reason flash does not preserve negative moduli
 		*/
-		protected function GetGridCell(c:int, r:int):Object {
+		public function GetGridCell(c:int, r:int):Object {
 			return m_cells[c%m_cols + (r%m_rows)*m_cols];
 		}
 		
