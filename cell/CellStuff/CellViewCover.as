@@ -17,8 +17,8 @@
 		
 		// consts
 		
-		public static const c_defaultWidth:Number = 0;
-		public static const c_defaultHeight:Number = 0;
+		public static const c_defaultWidth:Number = 550;
+		public static const c_defaultHeight:Number = 550;
 		
 		/* Constructor
 		*/
@@ -50,8 +50,8 @@
 			
 			var cell:Object = super.CreateCoverCell(gridCell, top, bottom, left, right);
 			
-			var X:Number = -m_startOffset.x;
-			var Y:Number = -m_startOffset.y
+			var X:Number = 0;
+			var Y:Number = 0;
 			
 			if (top) {
 				X = top.x;
@@ -65,6 +65,9 @@
 			} else if (right) {
 				X = right.x - m_cellWidth;
 				Y = right.y;
+			} else {
+				X = -m_width/2 - m_startOffset.x;
+				Y = -m_height/2 - m_startOffset.y;
 			}
 			
 			cell.sprite = tile;
@@ -180,7 +183,7 @@
 		public static function CreateViewCoverData():Object {
 			var cellGrid:CellGridLocations = new CellGridLocations( CellGridLocations.CreateGridLocationsData() );
 			
-			var start:Point = new Point(cellGrid.GetGridWidth()/2, cellGrid.GetGridHeight()/2);
+			var start:Point = new Point(cellGrid.GetGridWidth()/2 - c_defaultWidth/2, cellGrid.GetGridHeight()/2 - c_defaultHeight/2);
 			var col:int = cellGrid.GetColFromWorld(start);
 			var row:int = cellGrid.GetRowFromWorld(start);
 			

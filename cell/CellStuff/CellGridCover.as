@@ -11,8 +11,8 @@
 		protected var m_startOffset:Point;
 		private var m_endOffset:Point;
 		
-		private var m_width:Number;
-		private var m_height:Number;
+		protected var m_width:Number;
+		protected var m_height:Number;
 		
 		protected var m_cellWidth:Number;
 		protected var m_cellHeight:Number;
@@ -322,8 +322,6 @@
 			sprite.graphics.lineTo(startX + m_width, startY + m_height);
 			sprite.graphics.lineTo(startX, startY + m_height);
 			sprite.graphics.lineTo(startX, startY);
-			trace("here: " + startX + ", " + startY);
-			trace("\t: " + m_width+ ", " + m_height);
 			
 		}
 		
