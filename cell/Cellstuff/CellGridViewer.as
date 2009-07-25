@@ -20,20 +20,12 @@ package CellStuff {
 		private var m_viewerWidth:Number;
 		private var m_viewerHeight:Number;
 		
-		private var m_viewerWidthHalf:Number;
-		private var m_viewerHeightHalf:Number;
-		
-		private var m_startSourcePoint:Point;
-		private var m_startDestinationPoint:Point;
-		private var m_startCell:Object;
-		
 		private var m_cellWidth:Number;
 		private var m_cellHeight:Number;
 		
 		private var m_startOffset:Point;
 		private var m_endOffset:Point;
 		
-		private var m_tiles:Array;
 		private var m_stockTiles:Array;
 		
 		private var m_topLeft:Object;
@@ -53,35 +45,29 @@ package CellStuff {
 			m_viewerWidth = 0;
 			m_viewerHeight = 0;
 			
-			m_viewerWidthHalf = 0;
-			m_viewerHeightHalf = 0;
-			
-			m_startSourcePoint = m_cellGrid.CalculateWorld( viewerData.start );
-			m_startDestinationPoint = new Point(0, 0);
-			
-			m_startCell = m_cellGrid.GetGridCellFromWorld(m_startSourcePoint);
-			
 			m_cellWidth = m_cellGrid.GetCellWidth();
 			m_cellHeight = m_cellGrid.GetCellHeight();
 			
-			m_startOffset = m_cellGrid.WorldToLocal(m_startSourcePoint.clone(), m_startCell.col, m_startCell.row);
+			var startPoint:Point = m_cellGrid.CalculateWorld( viewerData.start );
+			var startCell:Object = m_cellGrid.GetGridCellFromWorld(startPoint);
+			
+			m_startOffset = m_cellGrid.WorldToLocal(startPoint, startCell.col, startCell.row);
 			m_endOffset = m_startOffset.clone();
 			
-			m_tiles = new Array();
 			m_stockTiles = new Array();
 			
 			x = 0;
 			y = 0;
 			
-			CreateTiles(viewerData.width, viewerData.height);
+			CreateTiles(startCell, viewerData.width, viewerData.height);
 		}
 		
 		/* CreateTiles
 		* creates all the tiles for the viewer.
 		* This is done by creating one tile and growing the viewer to the desired size
 		*/
-		private function CreateTiles(W:Number, H:Number):void {
-			m_topLeft = CreateTile(m_startCell, -m_startOffset.x, -m_startOffset.y);
+		private function CreateTiles(startCell:Object, W:Number, H:Number):void {
+			m_topLeft = CreateTile(startCell, -m_startOffset.x, -m_startOffset.y);
 			m_topRight = m_topLeft;
 			m_bottomLeft = m_topLeft;
 			m_bottomRight = m_topLeft;
@@ -308,15 +294,8 @@ package CellStuff {
 			MoveStartOffset(-widthAmountHalf, -heightAmountHalf);
 			MoveEndOffset(widthAmountHalf, heightAmountHalf);
 			
-			m_startSourcePoint.x -= widthAmountHalf;
-			m_startSourcePoint.y -= heightAmountHalf;
-			m_startDestinationPoint.x -= widthAmountHalf;
-			m_startDestinationPoint.y -= heightAmountHalf;
-			
 			m_viewerWidth += widthAmountHalf*2;
 			m_viewerHeight += heightAmountHalf*2;
-			m_viewerWidthHalf = m_viewerWidth/2;
-			m_viewerHeightHalf = m_viewerHeight/2;
 			
 			if (CellWorld.c_debug) {
 				Draw();
@@ -395,13 +374,6 @@ package CellStuff {
 			
 			MoveStartOffset(dx, dy);
 			MoveEndOffset(dx, dy);
-			
-			m_startSourcePoint.x -= dx;
-			m_startSourcePoint.y -= dy;
-			
-			m_startDestinationPoint.x -= dx;
-			m_startDestinationPoint.y -= dy;
-			
 		}
 		
 		// debug
@@ -435,22 +407,24 @@ package CellStuff {
 		}
 		
 		private function Draw():void {
+			var startX:Number = m_topLeft.x + m_startOffset.x;
+			var startY:Number = m_topLeft.y + m_startOffset.y;
+			
 			graphics.clear();
 			graphics.lineStyle(2, 0xFFFFFF);
-			graphics.moveTo(m_startDestinationPoint.x, m_startDestinationPoint.y);
-			graphics.lineTo(m_startDestinationPoint.x + m_viewerWidth, m_startDestinationPoint.y);
-			graphics.lineTo(m_startDestinationPoint.x + m_viewerWidth, m_startDestinationPoint.y + m_viewerHeight);
-			graphics.lineTo(m_startDestinationPoint.x, m_startDestinationPoint.y + m_viewerHeight);
-			graphics.lineTo(m_startDestinationPoint.x, m_startDestinationPoint.y);
+			graphics.moveTo(startX, startY);
+			graphics.lineTo(startX + m_viewerWidth, startY);
+			graphics.lineTo(startX + m_viewerWidth, startY + m_viewerHeight);
+			graphics.lineTo(startX, startY + m_viewerHeight);
+			graphics.lineTo(startX, startY);
 			
 		}
 		
 		public function ToString():String {
 			var str:String = "CellGridViewer:\n";
-			str += "\tsp:" + m_startSourcePoint.x + ", " + m_startSourcePoint.y + "\n";
-			str += "\tdp:" + m_startDestinationPoint.x + ", " + m_startDestinationPoint.y + "\n";
 			str += "\twh:" + m_viewerWidth + ", " + m_viewerHeight + "\n";
 			str += "\tso:" + m_startOffset.x + ", " + m_startOffset.y + "\n";
+			str += "\teo:" + m_endOffset.x + ", " + m_endOffset.y + "\n";
 			str += "\ttopLeft: " + m_topLeft.cell.id + ": " + m_topLeft.x + ", " + m_topLeft.y + "\n";
 			str += "\ttopRight: " + m_topRight.cell.id + ": " + m_topRight.x + ", " + m_topRight.y + "\n";
 			str += "\tbottomLeft: " + m_bottomLeft.cell.id + ": " + m_bottomLeft.x + ", " + m_bottomLeft.y + "\n";
