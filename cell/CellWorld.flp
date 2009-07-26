@@ -52,6 +52,7 @@
   <project_file path='CellStuff\CellSingle_Player.as' filetype='as'/>
   <project_file path='CellStuff\CellTextHandler.as' filetype='as'/>
   <project_file path='CellStuff\CellViewCover.as' filetype='as'/>
+  <project_file path='CellViewerTest.as' filetype='as'/>
   <project_file path='CellWorld.as' filetype='as'/>
   <project_file path='CellStuff\CellWorldMap.as' filetype='as'/>
   <project_file path='CellStuff\GridObject.as' filetype='as'/>

@@ -133,6 +133,16 @@ package CellStuff {
 			return CalculateDistanceVector(dv, dx, dy);
 		}
 		
+		/* CalculateDistanceVector_CellToLocal
+		* calculates the distance vector using a gridCell and local point
+		*/
+		public function CalculateDistanceVector_CellToLocal(dv:Point, cell:Object, p:Point, col:int, row:int):Point {
+			var dx:Number = -p.x + (cell.col - col)*m_cellWidth;
+			var dy:Number = -p.y + (cell.row - row)*m_cellHeight;
+			
+			return CalculateDistanceVector(dv, dx, dy);
+		}
+		
 		/* GetGridCellFromWorld
 		* returns the grid cell from the world position
 		*/

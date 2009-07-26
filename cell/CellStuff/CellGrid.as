@@ -127,6 +127,7 @@ package CellStuff {
 		* adds any object to the list of objects in a grid cell
 		*/
 		public function AddObject(gridCell:Object, object:*):void {
+			trace("added object to cell: id: " + gridCell.id + " (" + gridCell.col + ", " + gridCell.row + ")");
 			gridCell.objects.push(object);
 		}
 		

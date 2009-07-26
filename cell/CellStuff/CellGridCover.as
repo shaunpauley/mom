@@ -6,7 +6,9 @@
 	
 	public class CellGridCover {
 		
-		private var m_cellGrid:CellGridLocations;
+		protected var m_cellGrid:CellGridLocations;
+		
+		private var m_gridObject:Object;
 		
 		protected var m_startOffset:Point;
 		private var m_endOffset:Point;
@@ -28,6 +30,8 @@
 			
 			m_cellGrid = coverData.cellGrid;
 			
+			m_gridObject = null;
+			
 			m_startOffset = coverData.startLocal;
 			m_endOffset = m_startOffset.clone();
 			
@@ -39,6 +43,7 @@
 			
 			var gridCell:Object = m_cellGrid.GetGridCell(coverData.startCol, coverData.startRow);
 			CoverInit(gridCell);
+			
 		}
 		
 		/* CoverInit
@@ -306,6 +311,51 @@
 			coverCell.bottom = null;
 			coverCell.left = null;
 			coverCell.right = null;
+			
+			// remove any objects part of this cover
+			if (m_gridObject) {
+				m_cellGrid.RemoveObject(coverCell, m_gridObject);
+			}
+			
+		}
+		
+		/* SetGridObject
+		* adds an object to each grid cell of the cover
+		*/
+		public function SetGridObject(go:Object):void {
+			if (m_gridObject) {
+				ReleaseGridObject();
+			}
+			m_gridObject = go;
+			
+			// loop through all the cells
+			var currentRow:Object = m_topLeft;
+			while (currentRow) {
+				var current:Object = currentRow;
+				while (current) {
+					m_cellGrid.AddObject(current.cell, m_gridObject);
+					current = current.right;
+				}
+				currentRow = currentRow.bottom;
+			}
+		}
+		
+		/* ReleaseGridObject
+		* removes an object from each grid cell of the cover
+		*/
+		public function ReleaseGridObject():void {
+			// loop through all the cells
+			var currentRow:Object = m_topLeft;
+			while (currentRow) {
+				var current:Object = currentRow;
+				while (current) {
+					m_cellGrid.RemoveObject(current.cell, m_gridObject);
+					current = current.right;
+				}
+				currentRow = currentRow.bottom;
+			}
+			
+			m_gridObject = null;
 		}
 		
 		/* Draw
@@ -372,6 +422,24 @@
 			startRow:startRow,
 			width:width,
 			height:height};
+		}
+		
+		public static function CreateGridCoverData_GridObject(cellGrid:CellGridLocations, go:Object):Object {
+			var p:Point = cellGrid.LocalToWorld(go.localPoint.clone(), go.col, go.row);
+			p.x -= go.radius;
+			p.y -= go.radius;
+			
+			var col:int = cellGrid.GetColFromWorld(p);
+			var row:int = cellGrid.GetRowFromWorld(p);
+			
+			
+			return CreateGridCoverDataFull(cellGrid,
+			cellGrid.WorldToLocal(p, col, row),
+			col,
+			row,
+			go.radius*2,
+			go.radius*2);
+			
 		}
 	}
 	

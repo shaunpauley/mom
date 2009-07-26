@@ -334,8 +334,8 @@ package {
 			if (c_debug) {
 				CellGridLocations.UnitTest();
 				//CellGridViewer.UnitTest(myWorldDisplay);
-				myViewer = new CellGridViewer( CellGridViewer.CreateViewerData() );
-				myWorldDisplay.addChild(myViewer);
+				//myViewer = new CellGridViewer( CellGridViewer.CreateViewerData() );
+				//myWorldDisplay.addChild(myViewer);
 			}
 			
 			
@@ -955,7 +955,7 @@ package {
 				previousWorldLevel();
 			}
 			*/
-			
+			/*
 			if (event.keyCode == c_key_n) {
 				myViewer.GrowViewer(5, 5);
 			} else if (event.keyCode == c_key_m) {
@@ -967,6 +967,7 @@ package {
 			} else if (event.keyCode == c_key_k) {
 				myViewer.MoveViewer(5, 0);
 			}
+			*/
 		}
 		
 		public function resetKeys():void {

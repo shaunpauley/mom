@@ -29,7 +29,6 @@
 			
 			super(viewCoverData);
 			
-			
 		}
 		
 		/* CreateCoverCell
@@ -41,12 +40,6 @@
 		bottom:Object = null,
 		left:Object = null,
 		right:Object = null):Object {
-			
-			if (m_stockTiles.length) {
-				var tile:Sprite = m_stockTiles.pop();
-			} else {
-				tile = new Sprite();
-			}
 			
 			var cell:Object = super.CreateCoverCell(gridCell, top, bottom, left, right);
 			
@@ -70,12 +63,23 @@
 				Y = -m_height/2 - m_startOffset.y;
 			}
 			
+			if (m_stockTiles.length) {
+				var tile:Sprite = m_stockTiles.pop();
+			} else {
+				tile = new Sprite();
+			}
+			
 			cell.sprite = tile;
 			cell.x = X;
 			cell.y = Y;
 			
 			cell.sprite.x = cell.x;
 			cell.sprite.y = cell.y;
+			cell.registered = new Array();
+			
+			for each (var go:Object in gridCell.objects) {
+				RegisterGridObject(cell, go);
+			}
 			
 			if (CellWorld.c_debug) {
 				DrawCellBorder(cell);
@@ -86,12 +90,77 @@
 			return cell;
 		}
 		
+		/* RegisterGridObject
+		* registers a coverCell with a grid object.
+		* this places the grid object on the tile if not already registered, but also
+		* places coverCells on the stack so that the gridObject stays visible when it should
+		*/
+		private function RegisterGridObject(coverCell:Object, go:Object):void {
+			if (!go.registered) {
+				
+				go.sprite = BuildSpriteForGridObject(go);
+				
+				go.dv = m_cellGrid.CalculateDistanceVector_CellToLocal(go.dv, coverCell.cell, go.localPoint, go.col, go.row);
+				
+				go.sprite.x = -go.dv.x;
+				go.sprite.y = -go.dv.y;
+				
+				coverCell.sprite.addChild( go.sprite );
+				
+				go.registered = coverCell;
+				coverCell.registered.push( go );
+				
+			} else {
+				go.registeredStack.push(coverCell);
+				coverCell.registered.push(go);
+			}
+		}
+		
+		/* BuildSpriteForGridObject
+		* Makes a sprite for our grid object
+		*/
+		private function BuildSpriteForGridObject(go:Object):Sprite {
+			if (!go.sprite) {
+				go.sprite = new Sprite();
+			}
+			go.sprite.graphics.clear();
+			go.sprite.graphics.lineStyle(1.5, 0xFF6699);
+			go.sprite.graphics.drawCircle(0, 0, go.radius);
+			
+			return go.sprite;
+		}
+		
+		/* UnregisterCoverCell
+		* removes the grid object from the tile, but also adds to another existing tile if needed.
+		* this helps with keeping grid objects in view
+		*/
+		private function UnregisterCoverCell(coverCell:Object):void {
+			while (coverCell.registered.length) {
+				var go:Object = coverCell.registered.pop();
+				
+				if (go.registered == coverCell) {
+					go.registered.sprite.removeChild( go.sprite );
+					go.registered = null;
+					
+					if (go.registeredStack.length) {
+						RegisterGridObject(go.registeredStack.pop(), go);
+					}
+				} else {
+					var i:int = go.registeredStack.indexOf(coverCell);
+					go.registeredStack.splice(i, 1);
+				}
+				
+			}
+		}
+		
 		/* RemoveCoverCell
 		* removes a sprite tile and everything attached to the sprite.
 		* places the sprite tile on the stock in case we need it immediately
 		*/
 		protected override function RemoveCoverCell(coverCell:Object):void {
 			super.RemoveCoverCell(coverCell);
+			
+			UnregisterCoverCell(coverCell);
 			
 			coverCell.sprite.graphics.clear();
 			while(coverCell.sprite.numChildren) {
@@ -103,7 +172,7 @@
 		}
 		
 		/* GrowViewer
-		* grows the viewer and adds new s if necessary
+		* grows the viewer and adds new cells if necessary
 		*/
 		public override function GrowCover(widthAmount:Number, heightAmount:Number):void {
 			super.GrowCover(widthAmount, heightAmount);
@@ -180,8 +249,7 @@
 			return coverData;
 		}
 		
-		public static function CreateViewCoverData():Object {
-			var cellGrid:CellGridLocations = new CellGridLocations( CellGridLocations.CreateGridLocationsData() );
+		public static function CreateViewCoverData(cellGrid:CellGridLocations):Object {
 			
 			var start:Point = new Point(cellGrid.GetGridWidth()/2 - c_defaultWidth/2, cellGrid.GetGridHeight()/2 - c_defaultHeight/2);
 			var col:int = cellGrid.GetColFromWorld(start);
