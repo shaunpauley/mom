@@ -18,11 +18,24 @@
 		
 		private var m_cellGrid:CellGridLocations;
 		
+		private var m_physics:CellPhysics;
+		
+		private var m_moveObject:CellGridObject;
+		
+		private var m_pStats:CellPerformanceStatistics;
+		
+		private var m_moveDirection:Point;
+		
 		// keyboard handling
 		private var isKeyDown:Boolean;
 		private var isKeyUp:Boolean;
 		private var isKeyRight:Boolean;
 		private var isKeyLeft:Boolean;
+		
+		private var isKeyT:Boolean;
+		private var isKeyG:Boolean;
+		private var isKeyF:Boolean;
+		private var isKeyH:Boolean;
 		
 		private var isKeyZoomIn:Boolean;
 		private var isKeyZoomOut:Boolean;
@@ -38,6 +51,11 @@
 		public static const c_key_a:uint	= 65;
 		public static const c_key_d:uint	= 68;
 		
+		public static const c_key_t:uint 	= 84;
+		public static const c_key_g:uint	= 71;
+		public static const c_key_f:uint 	= 70;
+		public static const c_key_h:uint 	= 72;
+		
 		public static const c_key_j:uint		= 74;
 		public static const c_key_k:uint		= 75;
 		public static const c_key_n:uint		= 78;
@@ -45,6 +63,7 @@
 		public static const c_key_comma:uint	= 188;
 		public static const c_key_period:uint	= 190;
 		public static const c_key_slash:uint	= 191;
+		public static const c_key_spacebar:uint	= 32;
 		
 		public static const c_key_1:uint = 49;
 		public static const c_key_2:uint = 50;
@@ -56,29 +75,41 @@
 			worldSprite.y = 275;
 			
 			m_cellGrid = new CellGridLocations( CellGridLocations.CreateGridLocationsData() );
+			m_physics = new CellPhysics(m_cellGrid);
 			
-			var go:Object = {dv:new Point(0, 0), localPoint:new Point(20, 25), col:5, row:5, radius:3, registeredStack:new Array()};
-			go.cover = new CellGridCover( CellGridCover.CreateGridCoverData_GridObject(m_cellGrid, go) );
-			go.cover.SetGridObject(go);
+			var go:CellGridObject = new CellGridObject(3);
+			go.AddToGrid(m_cellGrid, new Point(20, 25), 5, 5);
 			
-			go = {dv:new Point(0, 0), localPoint:new Point(0, 25), col:5, row:6, radius:50, registeredStack:new Array()};
-			go.cover = new CellGridCover( CellGridCover.CreateGridCoverData_GridObject(m_cellGrid, go) );
-			go.cover.SetGridObject(go);
+			go = new CellGridObject(50);
+			go.AddToGrid(m_cellGrid, new Point(0, 25), 5, 6);
+			m_moveObject = go;
 			
-			go = {dv:new Point(0, 0), localPoint:new Point(75, 5), col:4, row:5, radius:30, registeredStack:new Array()};
-			go.cover = new CellGridCover( CellGridCover.CreateGridCoverData_GridObject(m_cellGrid, go) );
-			go.cover.SetGridObject(go);
+			go = new CellGridObject(30);
+			go.AddToGrid(m_cellGrid, new Point(75, 5), 4, 5);
 			
-			go = {dv:new Point(0, 0), localPoint:new Point(20, 45), col:18, row:19, radius:300, registeredStack:new Array()};
-			go.cover = new CellGridCover( CellGridCover.CreateGridCoverData_GridObject(m_cellGrid, go) );
-			go.cover.SetGridObject(go);
+			go = new CellGridObject(300);
+			go.AddToGrid(m_cellGrid, new Point(20, 45), 18, 19);
+			
+			go = new CellGridObject(2);
+			go.AddToGrid(m_cellGrid, new Point(20, 45), 18, 19);
+			
+			for (var i:int = 0; i < 100; ++i) {
+				go = new CellGridObject(Math.random()*30 + 2);
+				m_physics.AddToGrid(go, new Point(100*Math.random(), 100*Math.random()), int(Math.random()*20), int(Math.random()*20) );
+			}
 			
 			var viewerData:Object = CellGridViewer.CreateViewerData(m_cellGrid);
 			m_viewer = new CellGridViewer( viewerData );
+			m_viewer.SetFocusGridObject(m_moveObject);
 			
 			worldSprite.addChild(m_viewer);
 			
 			addChild(worldSprite);
+			
+			m_pStats = new CellPerformanceStatistics(m_physics, m_viewer);
+			addChild(m_pStats);
+			
+			m_moveDirection = new Point(0, 0);
 			
 			stage.addEventListener(KeyboardEvent.KEY_DOWN, keyDownHandler);
 			stage.addEventListener(KeyboardEvent.KEY_UP, keyUpHandler);
@@ -96,16 +127,43 @@
 			}
 			
 			if (isKeyLeft) {
-				m_viewer.MoveViewer(-5, 0);
+				m_moveDirection.x = -1;
 			} else if (isKeyRight) {
-				m_viewer.MoveViewer(5, 0);
+				m_moveDirection.x = 1;
+			} else {
+				m_moveDirection.x = 0;
 			}
 			
 			if (isKeyUp) {
-				m_viewer.MoveViewer(0, -5);
+				m_moveDirection.y = -1;
 			} else if (isKeyDown) {
-				m_viewer.MoveViewer(0, 5);
+				m_moveDirection.y = 1;
+			} else {
+				m_moveDirection.y = 0;
 			}
+			
+			if (m_moveDirection.length) {
+				m_moveDirection.normalize(1);
+				m_physics.MoveGridObject(m_moveObject, m_moveDirection.x*m_moveObject.m_maxSpeed, m_moveDirection.y*m_moveObject.m_maxSpeed);
+			}
+			
+			/*
+			if (isKeyT) {
+				//m_moveObject.Move(0, -1);
+			}
+			if (isKeyG) {
+				//m_moveObject.Move(0, 1);
+				m_physics.MoveGridObject(m_moveObject, 0, 3);
+			}
+			if (isKeyF) {
+				//m_moveObject.Move(-1, 0);
+				m_physics.MoveGridObject(m_moveObject, -3, 0);
+			}
+			if (isKeyH) {
+				//m_moveObject.Move(1, 0);
+				m_physics.MoveGridObject(m_moveObject, 3, 0);
+			}
+			*/
 		}
 		
 		public function keyDownHandler(event:KeyboardEvent):void {
@@ -115,6 +173,11 @@
 			isKeyLeft ||= (event.keyCode == c_key_left) || (event.keyCode == c_key_a);
 			isKeyZoomIn ||= (event.keyCode == c_key_n);
 			isKeyZoomOut ||= (event.keyCode == c_key_m);
+			
+			isKeyT ||= (event.keyCode == c_key_t);
+			isKeyG ||= (event.keyCode == c_key_g);
+			isKeyF ||= (event.keyCode == c_key_f);
+			isKeyH ||= (event.keyCode == c_key_h);
 		}
 		
 		public function keyUpHandler(event:KeyboardEvent):void {
@@ -125,6 +188,14 @@
 			isKeyZoomIn &&= !(event.keyCode == c_key_n);
 			isKeyZoomOut &&= !(event.keyCode == c_key_m);
 			
+			isKeyT &&= !(event.keyCode == c_key_t);
+			isKeyG &&= !(event.keyCode == c_key_g);
+			isKeyF &&= !(event.keyCode == c_key_f);
+			isKeyH &&= !(event.keyCode == c_key_h);
+			
+			if (event.keyCode == c_key_spacebar) {
+				trace(m_moveObject.m_cover.ToString());
+			}
 		}
 		
 	}

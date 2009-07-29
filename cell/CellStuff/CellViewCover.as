@@ -15,6 +15,13 @@
 		
 		private var m_stockTiles:Array;
 		
+		private var m_dv:Point;
+		
+		// stats
+		
+		private var m_numTiles:int;
+		private var m_numGridObjects:int;
+		
 		// consts
 		
 		public static const c_defaultWidth:Number = 550;
@@ -26,6 +33,11 @@
 			m_stockTiles = new Array();
 			
 			m_viewer = viewCoverData.viewer;
+			
+			m_numTiles = 0;
+			m_numGridObjects = 0;
+			
+			m_dv = new Point(0, 0);
 			
 			super(viewCoverData);
 			
@@ -41,7 +53,10 @@
 		left:Object = null,
 		right:Object = null):Object {
 			
-			var cell:Object = super.CreateCoverCell(gridCell, top, bottom, left, right);
+			var cellCover:Object = super.CreateCoverCell(gridCell, top, bottom, left, right);
+			cellCover.cover = this;
+			
+			gridCell.viewCell = cellCover;
 			
 			var X:Number = 0;
 			var Y:Number = 0;
@@ -64,30 +79,41 @@
 			}
 			
 			if (m_stockTiles.length) {
-				var tile:Sprite = m_stockTiles.pop();
+				var gridTile:Sprite = m_stockTiles.pop();
 			} else {
-				tile = new Sprite();
+				gridTile = new Sprite();
 			}
 			
-			cell.sprite = tile;
-			cell.x = X;
-			cell.y = Y;
+			if (m_stockTiles.length) {
+				var objectTile:Sprite = m_stockTiles.pop();
+			} else {
+				objectTile = new Sprite();
+			}
 			
-			cell.sprite.x = cell.x;
-			cell.sprite.y = cell.y;
-			cell.registered = new Array();
+			cellCover.gridTile = gridTile;
+			cellCover.objectTile = objectTile;
+			cellCover.x = X;
+			cellCover.y = Y;
 			
-			for each (var go:Object in gridCell.objects) {
-				RegisterGridObject(cell, go);
+			cellCover.gridTile.x = cellCover.x;
+			cellCover.gridTile.y = cellCover.y;
+			cellCover.objectTile.x = cellCover.x;
+			cellCover.objectTile.y = cellCover.y;
+			
+			for each (var go:CellGridObject in gridCell.objects) {
+				RegisterGridObject(cellCover, go);
 			}
 			
 			if (CellWorld.c_debug) {
-				DrawCellBorder(cell);
+				DrawCellBorder(cellCover);
 			}
 			
-			m_viewer.addChild(cell.sprite);
+			m_viewer.AddGridTile(cellCover.gridTile);
+			m_viewer.AddObjectTile(cellCover.objectTile);
 			
-			return cell;
+			m_numTiles++;
+			
+			return cellCover;
 		}
 		
 		/* RegisterGridObject
@@ -95,62 +121,71 @@
 		* this places the grid object on the tile if not already registered, but also
 		* places coverCells on the stack so that the gridObject stays visible when it should
 		*/
-		private function RegisterGridObject(coverCell:Object, go:Object):void {
-			if (!go.registered) {
+		public function RegisterGridObject(coverCell:Object, go:CellGridObject):void {
+			if (!go.m_registered) {
 				
-				go.sprite = BuildSpriteForGridObject(go);
+				go.m_registered = coverCell;
 				
-				go.dv = m_cellGrid.CalculateDistanceVector_CellToLocal(go.dv, coverCell.cell, go.localPoint, go.col, go.row);
+				go.m_sprite = BuildSpriteForGridObject(go);
 				
-				go.sprite.x = -go.dv.x;
-				go.sprite.y = -go.dv.y;
+				UpdateGridObject(go);
 				
-				coverCell.sprite.addChild( go.sprite );
+				coverCell.objectTile.addChild( go.m_sprite );
 				
-				go.registered = coverCell;
-				coverCell.registered.push( go );
+				m_numGridObjects++;
 				
 			} else {
-				go.registeredStack.push(coverCell);
-				coverCell.registered.push(go);
+				go.m_registeredStack.push(coverCell);
 			}
-		}
-		
-		/* BuildSpriteForGridObject
-		* Makes a sprite for our grid object
-		*/
-		private function BuildSpriteForGridObject(go:Object):Sprite {
-			if (!go.sprite) {
-				go.sprite = new Sprite();
-			}
-			go.sprite.graphics.clear();
-			go.sprite.graphics.lineStyle(1.5, 0xFF6699);
-			go.sprite.graphics.drawCircle(0, 0, go.radius);
-			
-			return go.sprite;
 		}
 		
 		/* UnregisterCoverCell
 		* removes the grid object from the tile, but also adds to another existing tile if needed.
 		* this helps with keeping grid objects in view
 		*/
-		private function UnregisterCoverCell(coverCell:Object):void {
-			while (coverCell.registered.length) {
-				var go:Object = coverCell.registered.pop();
+		public function UnregisterGridObject(coverCell:Object, go:CellGridObject):void {
+			if (go.m_registered == coverCell) {
+				go.m_registered.objectTile.removeChild( go.m_sprite );
+				go.m_registered = null;
 				
-				if (go.registered == coverCell) {
-					go.registered.sprite.removeChild( go.sprite );
-					go.registered = null;
-					
-					if (go.registeredStack.length) {
-						RegisterGridObject(go.registeredStack.pop(), go);
-					}
-				} else {
-					var i:int = go.registeredStack.indexOf(coverCell);
-					go.registeredStack.splice(i, 1);
+				m_numGridObjects--;
+				
+				if (go.m_registeredStack.length) {
+					RegisterGridObject(go.m_registeredStack.pop(), go);
 				}
-				
+			} else {
+				var i:int = go.m_registeredStack.indexOf(coverCell);
+				go.m_registeredStack.splice(i, 1);
 			}
+		}
+		
+		/* UpdateGridObject
+		* updates the sprite and possibly other things about the grid object
+		*/
+		public function UpdateGridObject(go:CellGridObject):void {
+			if (go.m_registered) {
+				go.m_dv = m_cellGrid.CalculateDistanceVector_CellToLocal(go.m_dv, go.m_registered.cell, go.m_localPoint, go.m_col, go.m_row);
+				
+				go.m_sprite.x = -go.m_dv.x;
+				go.m_sprite.y = -go.m_dv.y;
+			}
+		}
+		
+		/* BuildSpriteForGridObject
+		* Makes a sprite for our grid object
+		*/
+		private function BuildSpriteForGridObject(go:CellGridObject):Sprite {
+			if (!go.m_sprite) {
+				go.m_sprite = new Sprite();
+				
+				go.m_sprite.graphics.clear();
+				go.m_sprite.graphics.lineStyle(1.5, 0xFF6699);
+				go.m_sprite.graphics.beginFill(0xCC3366);
+				go.m_sprite.graphics.drawCircle(0, 0, go.m_radius);
+				go.m_sprite.graphics.endFill();
+			}
+			
+			return go.m_sprite;
 		}
 		
 		/* RemoveCoverCell
@@ -160,15 +195,29 @@
 		protected override function RemoveCoverCell(coverCell:Object):void {
 			super.RemoveCoverCell(coverCell);
 			
-			UnregisterCoverCell(coverCell);
+			coverCell.cell.viewCell = null;
 			
-			coverCell.sprite.graphics.clear();
-			while(coverCell.sprite.numChildren) {
-				coverCell.sprite.removeChild(coverCell.sprite.getChildAt(0));
+			for each (var go:CellGridObject in coverCell.cell.objects) {
+				UnregisterGridObject(coverCell, go);
 			}
-			m_viewer.removeChild(coverCell.sprite);
 			
-			m_stockTiles.push(coverCell.sprite);
+			coverCell.gridTile.graphics.clear();
+			while(coverCell.gridTile.numChildren) {
+				coverCell.gridTile.removeChild(coverCell.gridTile.getChildAt(0));
+			}
+			
+			coverCell.objectTile.graphics.clear();
+			while(coverCell.gridTile.numChildren) {
+				coverCell.gridTile.removeChild(coverCell.gridTile.getChildAt(0));
+			}
+			
+			m_viewer.RemoveGridTile(coverCell.gridTile);
+			m_viewer.RemoveObjectTile(coverCell.objectTile);
+			
+			m_stockTiles.push(coverCell.gridTile);
+			m_stockTiles.push(coverCell.objectTile);
+			
+			m_numTiles--;
 		}
 		
 		/* GrowViewer
@@ -178,7 +227,7 @@
 			super.GrowCover(widthAmount, heightAmount);
 			
 			if (CellWorld.c_debug) {
-				Draw(m_viewer);
+				Draw(m_viewer.TopLayer());
 			}
 		}
 		
@@ -194,8 +243,10 @@
 					currentCell.x += dx;
 					currentCell.y += dy;
 					
-					currentCell.sprite.x = currentCell.x;
-					currentCell.sprite.y = currentCell.y;
+					currentCell.gridTile.x = currentCell.x;
+					currentCell.gridTile.y = currentCell.y;
+					currentCell.objectTile.x = currentCell.x;
+					currentCell.objectTile.y = currentCell.y;
 					
 					currentCell = currentCell.right;
 				}
@@ -212,20 +263,54 @@
 			super.MoveCover(dx, dy);
 		}
 		
+		/* GetDistanceToGridObject
+		* returns the distance from the center of the cover to the grid object
+		*/
+		public function GetDistanceToGridObject(go:CellGridObject):Point {
+			return m_cellGrid.CalculateDistancVector_WorldToGridObject(m_dv, m_worldCenter, go);
+		}
+		
+		/* GetViewerWidth
+		* returns te view cover's width
+		*/
+		public function GetWidth():Number {
+			return m_width;
+		}
+		
+		/* GetViewerHeight
+		* returns te view cover's height
+		*/
+		public function GetHeight():Number {
+			return m_height;
+		}
+		
+		/* UpdatePerformanceStatistics
+		*/
+		public function UpdatePerformanceStatistics(pStats:CellPerformanceStatistics):CellPerformanceStatistics {
+			pStats.m_numStockTiles = m_stockTiles.length;
+			pStats.m_numViewTiles = m_numTiles;
+			pStats.m_numViewGridObjects = m_numGridObjects;
+			
+			return pStats;
+		}
+		
 		/* DrawCellBorder
 		* used if we need to draw the cell border, used in debug
 		*/
 		private function DrawCellBorder(cell:Object):void {
-			cell.sprite.graphics.clear();
+			cell.gridTile.graphics.clear();
 			
-			var randomColor:uint = uint(Math.random()*0xFFFFFF);
+			var randomColorDark:uint = uint(Math.random()*0x666666);
+			var randomColorLight:uint = uint(Math.random()*0x666666 + 0x999999);
 			
-			cell.sprite.graphics.lineStyle(1, randomColor);
-			cell.sprite.graphics.moveTo(0, 0);
-			cell.sprite.graphics.lineTo(m_cellWidth, 0);
-			cell.sprite.graphics.lineTo(m_cellWidth, m_cellHeight);
-			cell.sprite.graphics.lineTo(0, m_cellHeight);
-			cell.sprite.graphics.lineTo(0, 0);
+			cell.gridTile.graphics.lineStyle(1, randomColorDark);
+			cell.gridTile.graphics.beginFill(randomColorLight);
+			cell.gridTile.graphics.moveTo(0, 0);
+			cell.gridTile.graphics.lineTo(m_cellWidth, 0);
+			cell.gridTile.graphics.lineTo(m_cellWidth, m_cellHeight);
+			cell.gridTile.graphics.lineTo(0, m_cellHeight);
+			cell.gridTile.graphics.lineTo(0, 0);
+			cell.gridTile.graphics.endFill();
 			
 			var tf:TextField = new TextField();
 			tf.x = 0;
@@ -233,13 +318,13 @@
 			tf.autoSize = TextFieldAutoSize.LEFT;
 			var format:TextFormat = new TextFormat();
 			format.font = "Courier New";
-			format.color = randomColor;
+			format.color = randomColorDark;
 			format.size = 10;
 			tf.defaultTextFormat = format;
 			tf.selectable = false;
 			tf.text = String(cell.cell.id);
 			
-			cell.sprite.addChild(tf);
+			cell.gridTile.addChild(tf);
 		}
 		
 		/* CreateCellViewDataObject

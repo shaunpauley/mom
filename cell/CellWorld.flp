@@ -8,6 +8,14 @@
     <project_file path='CellStuff\CellArea_TextDisplay.as' filetype='as'/>
     <project_file path='CellStuff\CellArea_Upgrade.as' filetype='as'/>
   </project_folder>
+  <project_folder expanded='true' name='CellGrid'>
+    <project_file path='CellStuff\CellGrid.as' filetype='as'/>
+    <project_file path='CellStuff\CellGridCover.as' filetype='as'/>
+    <project_file path='CellStuff\CellGridDisplay.as' filetype='as'/>
+    <project_file path='CellStuff\CellGridLocations.as' filetype='as'/>
+    <project_file path='CellStuff\CellGridObject.as' filetype='as'/>
+    <project_file path='CellStuff\CellViewCover.as' filetype='as'/>
+  </project_folder>
   <project_folder expanded='false' name='CellPrit'>
     <project_file path='CellStuff\CellPrit.as' filetype='as'/>
     <project_file path='CellStuff\CellPrit_Attack.as' filetype='as'/>
@@ -41,17 +49,14 @@
   </project_folder>
   <project_file path='CellStuff\CellBackground.as' filetype='as'/>
   <project_file path='CellStuff\CellCreator.as' filetype='as'/>
-  <project_file path='CellStuff\CellGrid.as' filetype='as'/>
-  <project_file path='CellStuff\CellGridCover.as' filetype='as'/>
-  <project_file path='CellStuff\CellGridDisplay.as' filetype='as'/>
-  <project_file path='CellStuff\CellGridLocations.as' filetype='as'/>
   <project_file path='CellStuff\CellGridViewer.as' filetype='as'/>
   <project_file path='CellStuff\CellNucleus.as' filetype='as'/>
+  <project_file path='CellStuff\CellPerformanceStatistics.as' filetype='as'/>
+  <project_file path='CellStuff\CellPhysics.as' filetype='as'/>
   <project_file path='CellStuff\CellSingle.as' filetype='as'/>
   <project_file path='CellStuff\CellSingle_Enemy.as' filetype='as'/>
   <project_file path='CellStuff\CellSingle_Player.as' filetype='as'/>
   <project_file path='CellStuff\CellTextHandler.as' filetype='as'/>
-  <project_file path='CellStuff\CellViewCover.as' filetype='as'/>
   <project_file path='CellViewerTest.as' filetype='as'/>
   <project_file path='CellWorld.as' filetype='as'/>
   <project_file path='CellStuff\CellWorldMap.as' filetype='as'/>

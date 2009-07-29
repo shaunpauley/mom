@@ -66,20 +66,6 @@ package CellStuff {
 			return (p.y/m_cellHeight)%m_rows;
 		}
 		
-		/* CalcualteWorld
-		* make sure we have positive numbers.
-		* this really helps when using modulo because AS doesn't deal with -% correctly
-		*/
-		public function CalculateWorld(p:Point):Point {
-			while (p.x < 0) {
-				p.x += m_cellWidth;
-			}
-			while (p.y < 0) {
-				p.y += m_cellHeight;
-			}
-			return p;
-		}
-		
 		/* WorldToLocal
 		* converts a world point to a local grid point, given the column and row
 		*/
@@ -143,6 +129,16 @@ package CellStuff {
 			return CalculateDistanceVector(dv, dx, dy);
 		}
 		
+		/* CalculateDistancVector_WorldToGridObject
+		* calculates the distance vector from a world point to a grid object
+		*/
+		public function CalculateDistancVector_WorldToGridObject(dv:Point, p:Point, go:CellGridObject):Point {
+			var dx:Number = go.m_localPoint.x - p.x + go.m_col*m_cellWidth;
+			var dy:Number = go.m_localPoint.y - p.y + go.m_row*m_cellHeight;
+			
+			return CalculateDistanceVector(dv, dx, dy);
+		}
+		
 		/* GetGridCellFromWorld
 		* returns the grid cell from the world position
 		*/
@@ -194,6 +190,64 @@ package CellStuff {
 			return m_cellHeight;
 		}
 		
+		/* CalculateWorld
+		* prevents overflow
+		*/
+		public function CalculateWorld(p:Point):Point {
+			if (p.x < 0) {
+				p.x += m_gridWidth;
+			} else if (p.x >= m_gridWidth) {
+				p.x -= m_gridWidth;
+			}
+			
+			if (p.y < 0) {
+				p.y += m_gridWidth;
+			} else if (p.y >= m_gridHeight) {
+				p.y -= m_gridHeight;
+			}
+			
+			return p;
+		}
+		
+		/* MoveGridObject
+		* moves a grid object localy
+		* I wonder if this is slower than a world conversion
+		*/
+		public function MoveGridObject(go:CellGridObject, dx:Number, dy:Number):void {
+			go.m_localPoint.x += dx;
+			while (go.m_localPoint.x < 0) {
+				go.m_localPoint.x += m_cellWidth;
+				go.m_col--;
+				if (go.m_col < 0) {
+					go.m_col += m_cols;
+				}
+			}
+			while (go.m_localPoint.x > m_cellWidth) {
+				go.m_localPoint.x -= m_cellWidth;
+				go.m_col++;
+				if (go.m_col >= m_cols) {
+					go.m_col -= m_cols;
+				}
+			}
+			
+			go.m_localPoint.y += dy;
+			while (go.m_localPoint.y < 0) {
+				go.m_localPoint.y += m_cellHeight;
+				go.m_row--;
+				if (go.m_row < 0) {
+					go.m_row += m_rows;
+				}
+			}
+			while (go.m_localPoint.y > m_cellHeight) {
+				go.m_localPoint.y -= m_cellHeight;
+				go.m_row++;
+				if (go.m_row >= m_rows) {
+					go.m_row -= m_rows;
+				}
+			}
+			
+		}
+		
 		/*
 		* GridDataObject
 		*/
@@ -205,6 +259,18 @@ package CellStuff {
 		
 		public static function CreateGridLocationsData():Object {
 			return UpdateGridLocationsDataFull( CellGrid.CreateGridData(), c_defaultCellWidth, c_defaultCellWidth );
+		}
+		
+		/* UpdatePerformanceStatistics
+		*/
+		public override function UpdatePerformanceStatistics(pStats:CellPerformanceStatistics):CellPerformanceStatistics {
+			pStats.m_gridCellWidth = m_cellWidth;
+			pStats.m_gridCellHeight = m_cellHeight;
+			
+			pStats.m_gridWidth = m_gridWidth;
+			pStats.m_gridHeight = m_gridHeight;
+			
+			return super.UpdatePerformanceStatistics(pStats);
 		}
 		
 		// debug

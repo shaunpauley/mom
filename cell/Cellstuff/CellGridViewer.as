@@ -9,7 +9,16 @@ package CellStuff {
 	
 	import flash.geom.Point;
 	
+	import flash.events.Event;
+	
 	public class CellGridViewer extends Sprite {
+		
+		private var m_focusGridObject:CellGridObject;
+		
+		private var m_bottomLayer:Sprite;
+		private var m_gridLayer:Sprite;
+		private var m_objectLayer:Sprite;
+		private var m_topLayer:Sprite;
 		
 		private var m_viewCover:CellViewCover;
 		
@@ -17,13 +26,56 @@ package CellStuff {
 		*/
 		public function CellGridViewer(viewerData:Object):void {
 			
+			m_focusGridObject =  viewerData.focus;
+			
 			x = 0;
 			y = 0;
+			
+			m_bottomLayer = CreateAndAddLayer();
+			m_gridLayer = CreateAndAddLayer();
+			m_objectLayer = CreateAndAddLayer();
+			m_topLayer = CreateAndAddLayer();
 			
 			viewerData.coverData.viewer = this;
 			
 			m_viewCover = new CellViewCover(viewerData.coverData);
 			
+			addEventListener(Event.ENTER_FRAME, Update, false, 0, true);
+			
+		}
+		
+		/* Update
+		* called on ENTER_FRAME,
+		*/
+		private function Update(event:Event):void {
+			if (m_focusGridObject) {
+				var dv:Point = m_viewCover.GetDistanceToGridObject(m_focusGridObject);
+				var dx:Number = Math.abs(dv.x);
+				var dy:Number = Math.abs(dv.y);
+				var lengthInverse:Number = 1/dv.length;
+				var halfWidth:Number = m_viewCover.GetWidth()/2;
+				var halfHeight:Number = m_viewCover.GetHeight()/2;
+				if ( (dx > halfWidth*0.8) || (dy > halfHeight*0.8) ) {
+					MoveViewer(dv.x*lengthInverse*m_focusGridObject.m_maxSpeed*2, dv.y*lengthInverse*m_focusGridObject.m_maxSpeed*2);
+				} else if ( (dx > halfWidth*0.25) || (dy > halfHeight*0.25) ) {
+					MoveViewer(dv.x*lengthInverse*m_focusGridObject.m_maxSpeed, dv.y*lengthInverse*m_focusGridObject.m_maxSpeed);
+				} else if ( (dx > halfWidth*0.1) || (dy > halfHeight*0.1) ) {
+					MoveViewer(dv.x*lengthInverse*m_focusGridObject.m_maxSpeed*0.5, dv.y*lengthInverse*m_focusGridObject.m_maxSpeed*0.5);
+				}
+				
+			}
+		}
+		
+		/* CreateAndAddLayer
+		* createsa a layer and adds it to the viewer
+		*/
+		private function CreateAndAddLayer():Sprite {
+			var layer:Sprite = new Sprite();
+			layer.x = 0;
+			layer.y = 0;
+			addChild(layer);
+			
+			return layer;
 		}
 		
 		/* GrowViewer
@@ -47,6 +99,61 @@ package CellStuff {
 			m_viewCover.MoveCover(dx, dy);
 		}
 		
+		/* AddGridTile
+		* adds a sprite tile to the grid layer
+		*/
+		public function AddGridTile(sprite:Sprite):void {
+			m_gridLayer.addChild(sprite);
+		}
+		
+		/* RemoveGridTile
+		* removes a sprite tile from the grid layer
+		*/
+		public function RemoveGridTile(sprite:Sprite):void {
+			m_gridLayer.removeChild(sprite);
+		}
+		
+		/* AddObjectTile
+		* adds a sprite tile to the object layer
+		*/
+		public function AddObjectTile(sprite:Sprite):void {
+			m_objectLayer.addChild(sprite);
+		}
+		
+		/* RemoveObjectTile
+		* removes a sprite tile from the object layer
+		*/
+		public function RemoveObjectTile(sprite:Sprite):void {
+			m_objectLayer.removeChild(sprite);
+		}
+		
+		/* TopLayer
+		* access to the top layer
+		*/
+		public function TopLayer():Sprite {
+			return m_topLayer;
+		}
+		
+		/* BottomLayer
+		* access to the bottom layer
+		*/
+		public function BottomLayer():Sprite {
+			return m_bottomLayer;
+		}
+		
+		/* SetFocusGridObject
+		* sets so that the focus of the viewer should be on a grid object
+		*/
+		public function SetFocusGridObject(go:CellGridObject):void {
+			m_focusGridObject = go;
+		}
+		
+		/* UpdatePerformanceStatistics
+		*/
+		public function UpdatePerformanceStatistics(pStats:CellPerformanceStatistics):CellPerformanceStatistics {
+			return m_viewCover.UpdatePerformanceStatistics(pStats);
+		}
+		
 		// debug
 		public function ToString():String {
 			return m_viewCover.ToString();
@@ -55,7 +162,8 @@ package CellStuff {
 		/* CreateViewerDataObject
 		*/
 		public static function CreateViewerData(cellGrid:CellGridLocations):Object {
-			return {coverData:CellViewCover.CreateViewCoverData(cellGrid)};
+			
+			return {coverData:CellViewCover.CreateViewCoverData(cellGrid), focus:null};
 		}
 		
 		// unit tests

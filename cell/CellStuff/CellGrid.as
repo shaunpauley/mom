@@ -19,6 +19,8 @@ package CellStuff {
 		
 		private var m_idcount:int;
 		
+		private var m_numOccupied:int;
+		
 		// consts
 		private static const c_defaultCols:Number = 20;
 		private static const c_defaultRows:Number = 20;
@@ -76,7 +78,7 @@ package CellStuff {
 			if (m_stockCells.length > 0) {
 				var newCell:Object = m_stockCells.pop();
 			} else {
-				newCell = {col:c, row:r, id:++m_idcount, objects:new Array()};
+				newCell = {col:c, row:r, id:++m_idcount, objects:new Array(), viewCell:null};
 			}
 			
 			return ResetGridCell(newCell);
@@ -89,14 +91,16 @@ package CellStuff {
 		private function ResetGridCell(gridCell:Object):Object {
 			gridCell.col %= m_cols;
 			gridCell.row %= m_rows;
-			gridCell.top = GetGridCell(gridCell.col, gridCell.row-1);
+			gridCell.top = GetGridCell(gridCell.col, (gridCell.row-1)<0?(gridCell.row-1+m_rows):(gridCell.row-1));
 			gridCell.bottom = GetGridCell(gridCell.col, gridCell.row+1);
-			gridCell.left = GetGridCell(gridCell.col-1, gridCell.row);
+			gridCell.left = GetGridCell((gridCell.col-1)<0?(gridCell.col-1+m_cols):(gridCell.col-1), gridCell.row);
 			gridCell.right = GetGridCell(gridCell.col+1, gridCell.row);
 			
 			while(gridCell.objects.length) {
 				gridCell.objects.pop();
 			}
+			
+			gridCell.viewCell = null;
 			
 			if (gridCell.top) {
 				gridCell.top.bottom = gridCell;
@@ -125,19 +129,41 @@ package CellStuff {
 		
 		/* AddObject
 		* adds any object to the list of objects in a grid cell
+		* also, notifies all objects in the cell that the object has entered
 		*/
-		public function AddObject(gridCell:Object, object:*):void {
-			trace("added object to cell: id: " + gridCell.id + " (" + gridCell.col + ", " + gridCell.row + ")");
-			gridCell.objects.push(object);
+		public function AddObject(gridCell:Object, go:CellGridObject):void {
+			for each (var go2:CellGridObject in gridCell.objects) {
+				go2.ObjectEnterGridCell(gridCell, go);
+				go.ObjectEnterGridCell(gridCell, go2);
+			}
+			
+			if (gridCell.viewCell) {
+				gridCell.viewCell.cover.RegisterGridObject(gridCell.viewCell, go);
+			}
+			
+			gridCell.objects.push(go);
+			m_numOccupied++;
 		}
 		
 		/* RemoveObject
-		* removes the object if exists from the grid cell
+		* removes the object if exists from the grid cell.
+		* also, notifies all objects in the cell that the object has left
 		*/
-		public function RemoveObject(gridCell:Object, object:*):void {
-			var i:int = gridCell.objects.indexOf(object);
-			if (i > 0) {
+		public function RemoveObject(gridCell:Object, go:CellGridObject):void {
+			var i:int = gridCell.objects.indexOf(go);
+			if (i > -1) {
+				
+				for each (var go2:CellGridObject in gridCell.objects) {
+					go2.ObjectLeaveGridCell(gridCell, go);
+					go.ObjectLeaveGridCell(gridCell, go2);
+				}
+				
+				if (gridCell.viewCell) {
+					gridCell.viewCell.cover.UnregisterGridObject(gridCell.viewCell, go);
+				}
+				
 				gridCell.objects.splice(i, 1);
+				m_numOccupied--;
 			}
 		}
 		
@@ -215,14 +241,27 @@ package CellStuff {
 			return str;
 		}
 		
+		/* UpdatePerformanceStatistics
+		*/
+		public function UpdatePerformanceStatistics(pStats:CellPerformanceStatistics):CellPerformanceStatistics {
+			pStats.m_numGridCells = m_cells.length;
+			pStats.m_numOccupiedGridCells = m_numOccupied;
+			pStats.m_numStockGridCells = m_stockCells.length;
+			pStats.m_numGridColumns = m_cols;
+			pStats.m_numGridRows = m_rows;
+			
+			return pStats;
+		}
+		
 		// use this to display debug info for individual gridcell objects
 		public static function GridCellToString(gridCell:Object):String {
 			var str:String = "\t";
 			str += gridCell.id;
-			str += (gridCell.top?"T":"");
-			str += (gridCell.bottom?"B":"");
-			str += (gridCell.left?"L":"");
-			str += (gridCell.right?"R":"");
+			str += (gridCell.top?"T"+gridCell.top.id:"");
+			str += (gridCell.bottom?"B"+gridCell.bottom.id:"");
+			str += (gridCell.left?"L"+gridCell.left.id:"");
+			str += (gridCell.right?"R"+gridCell.right.id:"");
+			str += (gridCell.viewCell?"V":"");
 			return str;
 		}
 		
@@ -246,12 +285,30 @@ package CellStuff {
 			trace( GridCellToString(testGrid.GetGridCell(testGrid.m_cols-1, 0)) );
 			
 			trace("TEST 6) GET CELL, endc, endr");
-			trace( GridCellToString(testGrid.GetGridCell(testGrid.m_cols-1, testGrid.m_rows-1)) );
+			var cell:Object = testGrid.GetGridCell(testGrid.m_cols-1, testGrid.m_rows-1);
+			trace( GridCellToString(cell) );
 			
-			trace("TEST 7) GET CELL, 100, 100");
+			trace("TEST 7) GET END CELL.RIGHT");
+			cell = cell.right;
+			trace( GridCellToString(cell) );
+			
+			trace("TEST 8) GET PREVIOUS CELL.BOTTOM");
+			cell = cell.bottom;
+			trace( GridCellToString(cell) );
+			
+			trace("TEST 9) GET END CELL.BOTTOM");
+			cell = testGrid.GetGridCell(testGrid.m_cols-1, testGrid.m_rows-1);
+			cell = cell.bottom;
+			trace( GridCellToString(cell) );
+			
+			trace("TEST 10) GET PREVIOUS CELL.RIGHT");
+			cell = cell.right;
+			trace( GridCellToString(cell) );
+			
+			trace("TEST 11) GET CELL, 100, 100");
 			trace( GridCellToString(testGrid.GetGridCell(100, 100)) );
 			
-			trace("TEST 8) GET CELL, 134, 63");
+			trace("TEST 12) GET CELL, 134, 63");
 			trace( GridCellToString(testGrid.GetGridCell(134, 63)) );
 			
 			trace("***END CellGrid UNIT TEST***");
