@@ -1,6 +1,7 @@
 ﻿package CellStuff {
 	
 	import flash.display.Sprite;
+	import flash.display.DisplayObject;
 	
 	import flash.geom.Point;
 	
@@ -21,9 +22,13 @@
 		
 		public var m_cover:CellGridCover;
 		
-		public var m_sprite:Sprite;
-		
 		public var m_maxSpeed:Number;
+		
+		public var m_sprite:Sprite;
+		public var m_isDrawn:Boolean;
+		public var m_libraryName:String;
+		public var m_isBitmapCached:Boolean;
+		public var m_display:DisplayObject;
 		
 		//
 		
@@ -31,8 +36,8 @@
 		
 		// consts
 		
-		public static const c_maxMass:Number = 10000;
-		public static const c_minMass:Number = 0;
+		public static const c_maxMass:Number = 10000.0;
+		public static const c_minMass:Number = 0.0;
 		
 		/* Constructor
 		*/
@@ -53,6 +58,10 @@
 			m_cover = null;
 			
 			m_sprite = null;
+			m_isDrawn = false;
+			m_libraryName = "PhysFlower";
+			m_isBitmapCached = true;
+			m_display = null;
 			
 			m_maxSpeed = maxSpeed;
 			

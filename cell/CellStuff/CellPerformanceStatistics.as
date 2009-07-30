@@ -34,6 +34,10 @@
 		public var m_numViewTiles:int;
 		public var m_numViewGridObjects:int;
 		
+		// bitmap manager
+		public var m_numBitmapLibraryEntries:int;
+		public var m_numMovieClips:int;
+		
 		// private
 		private var m_physics:CellPhysics;
 		private var m_viewer:CellGridViewer;
@@ -111,7 +115,9 @@
 			m_data += "\tnum stock tiles: " + m_numStockTiles + "\n";
 			m_data += "\tnum view tiles: " + m_numViewTiles + "\n";
 			m_data += "\tnum view grid objects: " + m_numViewGridObjects + "\n";
-			
+			m_data += "bitmap manager:\n";
+			m_data += "\tnum bitmap library entries: " + m_numBitmapLibraryEntries + "\n";
+			m_data += "\tnum movie clips: " + m_numMovieClips + "\n";
 			
 			m_textField.text = m_data;
 		}

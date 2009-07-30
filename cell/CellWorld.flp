@@ -48,8 +48,11 @@
     <project_file path='CellStuff\CellProt_Worm.as' filetype='as'/>
   </project_folder>
   <project_file path='CellStuff\CellBackground.as' filetype='as'/>
+  <project_file path='CellStuff\CellBitmapManager.as' filetype='as'/>
+  <project_file path='CellStuff\CellCachedBitmapData.as' filetype='as'/>
   <project_file path='CellStuff\CellCreator.as' filetype='as'/>
   <project_file path='CellStuff\CellGridViewer.as' filetype='as'/>
+  <project_file path='CellStuff\CellMovieClip.as' filetype='as'/>
   <project_file path='CellStuff\CellNucleus.as' filetype='as'/>
   <project_file path='CellStuff\CellPerformanceStatistics.as' filetype='as'/>
   <project_file path='CellStuff\CellPhysics.as' filetype='as'/>

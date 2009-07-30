@@ -20,6 +20,8 @@ package CellStuff {
 		private var m_objectLayer:Sprite;
 		private var m_topLayer:Sprite;
 		
+		private var m_bitmapManager:CellBitmapManager;
+		
 		private var m_viewCover:CellViewCover;
 		
 		/* Constructor
@@ -38,7 +40,9 @@ package CellStuff {
 			
 			viewerData.coverData.viewer = this;
 			
-			m_viewCover = new CellViewCover(viewerData.coverData);
+			m_bitmapManager = new CellBitmapManager();
+			
+			m_viewCover = new CellViewCover(viewerData.coverData, m_bitmapManager);
 			
 			addEventListener(Event.ENTER_FRAME, Update, false, 0, true);
 			
@@ -52,15 +56,14 @@ package CellStuff {
 				var dv:Point = m_viewCover.GetDistanceToGridObject(m_focusGridObject);
 				var dx:Number = Math.abs(dv.x);
 				var dy:Number = Math.abs(dv.y);
-				var lengthInverse:Number = 1/dv.length;
 				var halfWidth:Number = m_viewCover.GetWidth()/2;
 				var halfHeight:Number = m_viewCover.GetHeight()/2;
-				if ( (dx > halfWidth*0.8) || (dy > halfHeight*0.8) ) {
-					MoveViewer(dv.x*lengthInverse*m_focusGridObject.m_maxSpeed*2, dv.y*lengthInverse*m_focusGridObject.m_maxSpeed*2);
-				} else if ( (dx > halfWidth*0.25) || (dy > halfHeight*0.25) ) {
-					MoveViewer(dv.x*lengthInverse*m_focusGridObject.m_maxSpeed, dv.y*lengthInverse*m_focusGridObject.m_maxSpeed);
-				} else if ( (dx > halfWidth*0.1) || (dy > halfHeight*0.1) ) {
-					MoveViewer(dv.x*lengthInverse*m_focusGridObject.m_maxSpeed*0.5, dv.y*lengthInverse*m_focusGridObject.m_maxSpeed*0.5);
+				
+				if ( (dx > halfWidth*0.1) || (dy > halfHeight*0.1) ) {
+					var lengthInverse:Number = 1/dv.length;
+					var moveX:Number = dv.x*lengthInverse*m_focusGridObject.m_maxSpeed*(dx*3/halfWidth);
+					var moveY:Number = dv.y*lengthInverse*m_focusGridObject.m_maxSpeed*(dy*3/halfHeight);
+					MoveViewer(moveX, moveY);
 				}
 				
 			}
@@ -148,9 +151,25 @@ package CellStuff {
 			m_focusGridObject = go;
 		}
 		
+		/* GetWidth
+		* returns the viewer width
+		*/
+		public function GetWidth():Number {
+			return m_viewCover.GetWidth();
+		}
+		
+		/* GetHeight
+		* returns the viewer height
+		*/
+		public function GetHeight():Number {
+			return m_viewCover.GetHeight();
+		}
+		
 		/* UpdatePerformanceStatistics
 		*/
 		public function UpdatePerformanceStatistics(pStats:CellPerformanceStatistics):CellPerformanceStatistics {
+			pStats = m_bitmapManager.UpdatePerformanceStatistics(pStats);
+			
 			return m_viewCover.UpdatePerformanceStatistics(pStats);
 		}
 		

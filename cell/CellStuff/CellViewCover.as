@@ -1,6 +1,7 @@
 ﻿package CellStuff {
 	
 	import flash.display.Sprite;
+	import flash.display.Bitmap;
 	
 	import flash.geom.Point;
 	
@@ -17,6 +18,8 @@
 		
 		private var m_dv:Point;
 		
+		private var m_bitmapManager:CellBitmapManager;
+		
 		// stats
 		
 		private var m_numTiles:int;
@@ -29,7 +32,7 @@
 		
 		/* Constructor
 		*/
-		public function CellViewCover(viewCoverData:Object):void {
+		public function CellViewCover(viewCoverData:Object, bitmapManager:CellBitmapManager):void {
 			m_stockTiles = new Array();
 			
 			m_viewer = viewCoverData.viewer;
@@ -38,6 +41,8 @@
 			m_numGridObjects = 0;
 			
 			m_dv = new Point(0, 0);
+			
+			m_bitmapManager = bitmapManager;
 			
 			super(viewCoverData);
 			
@@ -126,7 +131,9 @@
 				
 				go.m_registered = coverCell;
 				
-				go.m_sprite = BuildSpriteForGridObject(go);
+				if ( !m_bitmapManager.IsGridObjectSetSprite(go) ) {
+					go.m_sprite = m_bitmapManager.SetGridObjectSprite(go);
+				}
 				
 				UpdateGridObject(go);
 				
@@ -152,6 +159,8 @@
 				
 				if (go.m_registeredStack.length) {
 					RegisterGridObject(go.m_registeredStack.pop(), go);
+				} else {
+					m_bitmapManager.ReleaseGridObjectSprite(go);
 				}
 			} else {
 				var i:int = go.m_registeredStack.indexOf(coverCell);
@@ -169,23 +178,6 @@
 				go.m_sprite.x = -go.m_dv.x;
 				go.m_sprite.y = -go.m_dv.y;
 			}
-		}
-		
-		/* BuildSpriteForGridObject
-		* Makes a sprite for our grid object
-		*/
-		private function BuildSpriteForGridObject(go:CellGridObject):Sprite {
-			if (!go.m_sprite) {
-				go.m_sprite = new Sprite();
-				
-				go.m_sprite.graphics.clear();
-				go.m_sprite.graphics.lineStyle(1.5, 0xFF6699);
-				go.m_sprite.graphics.beginFill(0xCC3366);
-				go.m_sprite.graphics.drawCircle(0, 0, go.m_radius);
-				go.m_sprite.graphics.endFill();
-			}
-			
-			return go.m_sprite;
 		}
 		
 		/* RemoveCoverCell
@@ -302,8 +294,7 @@
 			
 			var randomColorDark:uint = uint(Math.random()*0x666666);
 			var randomColorLight:uint = uint(Math.random()*0x666666 + 0x999999);
-			
-			cell.gridTile.graphics.lineStyle(1, randomColorDark);
+			//cell.gridTile.graphics.lineStyle(0, randomColorDark);
 			cell.gridTile.graphics.beginFill(randomColorLight);
 			cell.gridTile.graphics.moveTo(0, 0);
 			cell.gridTile.graphics.lineTo(m_cellWidth, 0);
@@ -312,6 +303,7 @@
 			cell.gridTile.graphics.lineTo(0, 0);
 			cell.gridTile.graphics.endFill();
 			
+			/*
 			var tf:TextField = new TextField();
 			tf.x = 0;
 			tf.y = 0;
@@ -323,8 +315,8 @@
 			tf.defaultTextFormat = format;
 			tf.selectable = false;
 			tf.text = String(cell.cell.id);
-			
 			cell.gridTile.addChild(tf);
+			*/
 		}
 		
 		/* CreateCellViewDataObject

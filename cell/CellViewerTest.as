@@ -26,6 +26,10 @@
 		
 		private var m_moveDirection:Point;
 		
+		private var m_bitmapData:CellCachedBitmapData;
+		
+		private var m_worldSprite:Sprite;
+		
 		// keyboard handling
 		private var isKeyDown:Boolean;
 		private var isKeyUp:Boolean;
@@ -70,41 +74,48 @@
 		
 		public function CellViewerTest():void {
 			
-			var worldSprite:Sprite = new Sprite();
-			worldSprite.x = 275;
-			worldSprite.y = 275;
+			m_worldSprite = new Sprite();
+			m_worldSprite.x = 275;
+			m_worldSprite.y = 275;
 			
 			m_cellGrid = new CellGridLocations( CellGridLocations.CreateGridLocationsData() );
 			m_physics = new CellPhysics(m_cellGrid);
 			
-			var go:CellGridObject = new CellGridObject(3);
+			var go:CellGridObject = new CellGridObject(3, 0);
 			go.AddToGrid(m_cellGrid, new Point(20, 25), 5, 5);
+			go.m_isDrawn = true;
 			
 			go = new CellGridObject(50);
 			go.AddToGrid(m_cellGrid, new Point(0, 25), 5, 6);
-			m_moveObject = go;
+			go.m_isDrawn = true;
 			
 			go = new CellGridObject(30);
 			go.AddToGrid(m_cellGrid, new Point(75, 5), 4, 5);
+			go.m_isDrawn = true
+			m_moveObject = go;
 			
-			go = new CellGridObject(300);
+			go = new CellGridObject(300, 100);
 			go.AddToGrid(m_cellGrid, new Point(20, 45), 18, 19);
+			go.m_isBitmapCached = false;
 			
 			go = new CellGridObject(2);
 			go.AddToGrid(m_cellGrid, new Point(20, 45), 18, 19);
+			go.m_isDrawn = true
 			
-			for (var i:int = 0; i < 100; ++i) {
-				go = new CellGridObject(Math.random()*30 + 2);
+			for (var i:int = 0; i < 500; ++i) {
+				go = new CellGridObject(Math.random()*30 + 2, CellGridObject.c_maxMass-1);
 				m_physics.AddToGrid(go, new Point(100*Math.random(), 100*Math.random()), int(Math.random()*20), int(Math.random()*20) );
 			}
+			
+			m_bitmapData = new CellCachedBitmapData( new PhysFlower() );
 			
 			var viewerData:Object = CellGridViewer.CreateViewerData(m_cellGrid);
 			m_viewer = new CellGridViewer( viewerData );
 			m_viewer.SetFocusGridObject(m_moveObject);
 			
-			worldSprite.addChild(m_viewer);
+			m_worldSprite.addChild(m_viewer);
 			
-			addChild(worldSprite);
+			addChild(m_worldSprite);
 			
 			m_pStats = new CellPerformanceStatistics(m_physics, m_viewer);
 			addChild(m_pStats);
@@ -122,8 +133,12 @@
 			
 			if (isKeyZoomOut) {
 				m_viewer.GrowViewer(5, 5);
+				m_worldSprite.scaleX = 550/m_viewer.GetWidth();
+				m_worldSprite.scaleY = 550/m_viewer.GetHeight();
 			} else if (isKeyZoomIn) {
 				m_viewer.ShrinkViewer(5, 5);
+				m_worldSprite.scaleX = 550/m_viewer.GetWidth();
+				m_worldSprite.scaleY = 550/m_viewer.GetHeight();
 			}
 			
 			if (isKeyLeft) {
