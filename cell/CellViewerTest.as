@@ -28,6 +28,8 @@
 		
 		private var m_bitmapData:CellCachedBitmapData;
 		
+		private var m_worker:CellWorldWorker;
+		
 		private var m_worldSprite:Sprite;
 		
 		// keyboard handling
@@ -81,31 +83,34 @@
 			m_cellGrid = new CellGridLocations( CellGridLocations.CreateGridLocationsData() );
 			m_physics = new CellPhysics(m_cellGrid);
 			
-			var go:CellGridObject = new CellGridObject(3, 0);
-			go.AddToGrid(m_cellGrid, new Point(20, 25), 5, 5);
-			go.m_isDrawn = true;
+			//go.m_isDrawn = true;
 			
-			go = new CellGridObject(50);
-			go.AddToGrid(m_cellGrid, new Point(0, 25), 5, 6);
-			go.m_isDrawn = true;
+			var go2:CellGridObject = new CellGridObject(20);
+			go2.AddToGrid(m_cellGrid, new Point(0, 25), 5, 6);
+			go2.m_isDrawn = true;
 			
-			go = new CellGridObject(30);
-			go.AddToGrid(m_cellGrid, new Point(75, 5), 4, 5);
-			go.m_isDrawn = true
-			m_moveObject = go;
+			var go3:CellGridObject = new CellGridObject(30);
+			go3.AddToGrid(m_cellGrid, new Point(75, 5), 4, 5);
+			go3.m_isDrawn = true
+			go3.AttachGridObject(go2, 120);
+			go2.m_attachedRotationSpeed = 1;
+			m_moveObject = go3;
 			
 			go = new CellGridObject(300, 100);
 			go.AddToGrid(m_cellGrid, new Point(20, 45), 18, 19);
 			go.m_isBitmapCached = false;
 			
-			go = new CellGridObject(2);
-			go.AddToGrid(m_cellGrid, new Point(20, 45), 18, 19);
-			go.m_isDrawn = true
-			
-			for (var i:int = 0; i < 500; ++i) {
-				go = new CellGridObject(Math.random()*30 + 2, CellGridObject.c_maxMass-1);
+			for (var i:int = 0; i < 100; ++i) {
+				var go:CellGridObject = new CellGridObject(Math.random()*30 + 2, CellGridObject.c_maxMass-1);
 				m_physics.AddToGrid(go, new Point(100*Math.random(), 100*Math.random()), int(Math.random()*20), int(Math.random()*20) );
+				//go3.AttachGridObject(go, Math.random()*300 + 30 + go.m_radius);
+				//go.m_attachedRotationSpeed = Math.random()*-2+1;
 			}
+			
+			var go4:CellGridObject = new CellGridObject(10, 0);
+			go4.AddToGrid(m_cellGrid, new Point(20, 25), 5, 5);
+			go3.AttachGridObject(go4, 70);
+			go4.m_attachedRotationSpeed = -1;
 			
 			m_bitmapData = new CellCachedBitmapData( new PhysFlower() );
 			
@@ -115,9 +120,17 @@
 			
 			m_worldSprite.addChild(m_viewer);
 			
+			var workCoverData:Object = CellWorldWorker.CreateWorkCoverData(m_cellGrid, m_viewer);
+			var workCover:CellGridCover = new CellGridCover(workCoverData);
+			m_worker = new CellWorldWorker(m_cellGrid, m_physics, workCover);
+			m_worker.AddGridObjectAsFullTimer(m_moveObject);
+			m_worker.AddGridObjectAsFullTimer(go2);
+			m_worker.AddGridObjectAsFullTimer(go4);
+			m_viewer.SetWorkCover(workCover);
+			
 			addChild(m_worldSprite);
 			
-			m_pStats = new CellPerformanceStatistics(m_physics, m_viewer);
+			m_pStats = new CellPerformanceStatistics(m_physics, m_viewer, m_worker);
 			addChild(m_pStats);
 			
 			m_moveDirection = new Point(0, 0);
@@ -158,27 +171,9 @@
 			}
 			
 			if (m_moveDirection.length) {
-				m_moveDirection.normalize(1);
-				m_physics.MoveGridObject(m_moveObject, m_moveDirection.x*m_moveObject.m_maxSpeed, m_moveDirection.y*m_moveObject.m_maxSpeed);
+				m_moveObject.Accelerate(m_moveDirection.x, m_moveDirection.y);
 			}
 			
-			/*
-			if (isKeyT) {
-				//m_moveObject.Move(0, -1);
-			}
-			if (isKeyG) {
-				//m_moveObject.Move(0, 1);
-				m_physics.MoveGridObject(m_moveObject, 0, 3);
-			}
-			if (isKeyF) {
-				//m_moveObject.Move(-1, 0);
-				m_physics.MoveGridObject(m_moveObject, -3, 0);
-			}
-			if (isKeyH) {
-				//m_moveObject.Move(1, 0);
-				m_physics.MoveGridObject(m_moveObject, 3, 0);
-			}
-			*/
 		}
 		
 		public function keyDownHandler(event:KeyboardEvent):void {

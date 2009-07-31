@@ -23,6 +23,7 @@ package CellStuff {
 		private var m_bitmapManager:CellBitmapManager;
 		
 		private var m_viewCover:CellViewCover;
+		private var m_workCover:CellGridCover;
 		
 		/* Constructor
 		*/
@@ -43,6 +44,7 @@ package CellStuff {
 			m_bitmapManager = new CellBitmapManager();
 			
 			m_viewCover = new CellViewCover(viewerData.coverData, m_bitmapManager);
+			m_workCover = null;
 			
 			addEventListener(Event.ENTER_FRAME, Update, false, 0, true);
 			
@@ -59,10 +61,10 @@ package CellStuff {
 				var halfWidth:Number = m_viewCover.GetWidth()/2;
 				var halfHeight:Number = m_viewCover.GetHeight()/2;
 				
-				if ( (dx > halfWidth*0.1) || (dy > halfHeight*0.1) ) {
+				if ( (dx > 0) || (dy > 0) ) {
 					var lengthInverse:Number = 1/dv.length;
-					var moveX:Number = dv.x*lengthInverse*m_focusGridObject.m_maxSpeed*(dx*3/halfWidth);
-					var moveY:Number = dv.y*lengthInverse*m_focusGridObject.m_maxSpeed*(dy*3/halfHeight);
+					var moveX:Number = dv.x*lengthInverse*m_focusGridObject.m_maxSpeed*(dx*4/halfWidth);
+					var moveY:Number = dv.y*lengthInverse*m_focusGridObject.m_maxSpeed*(dy*4/halfHeight);
 					MoveViewer(moveX, moveY);
 				}
 				
@@ -100,6 +102,9 @@ package CellStuff {
 		*/
 		public function MoveViewer(dx:Number, dy:Number):void {
 			m_viewCover.MoveCover(dx, dy);
+			if (m_workCover) {
+				m_workCover.MoveCover(dx, dy);
+			}
 		}
 		
 		/* AddGridTile
@@ -165,11 +170,24 @@ package CellStuff {
 			return m_viewCover.GetHeight();
 		}
 		
+		/* GetWorldCenter
+		* returns the viewer center in world coordinates
+		*/
+		public function GetWorldCenter():Point {
+			return m_viewCover.GetWorldCenter();
+		}
+		
+		/* SetWorkCover
+		* sets the work cover
+		*/
+		public function SetWorkCover(workCover:CellGridCover):void {
+			m_workCover = workCover;
+		}
+		
 		/* UpdatePerformanceStatistics
 		*/
 		public function UpdatePerformanceStatistics(pStats:CellPerformanceStatistics):CellPerformanceStatistics {
 			pStats = m_bitmapManager.UpdatePerformanceStatistics(pStats);
-			
 			return m_viewCover.UpdatePerformanceStatistics(pStats);
 		}
 		
@@ -181,8 +199,8 @@ package CellStuff {
 		/* CreateViewerDataObject
 		*/
 		public static function CreateViewerData(cellGrid:CellGridLocations):Object {
-			
-			return {coverData:CellViewCover.CreateViewCoverData(cellGrid), focus:null};
+			var coverData:Object = CellViewCover.CreateViewCoverData(cellGrid);
+			return {coverData:coverData, focus:null};
 		}
 		
 		// unit tests

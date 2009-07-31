@@ -22,17 +22,23 @@
 		
 		public var m_cover:CellGridCover;
 		
-		public var m_maxSpeed:Number;
-		
 		public var m_sprite:Sprite;
 		public var m_isDrawn:Boolean;
 		public var m_libraryName:String;
 		public var m_isBitmapCached:Boolean;
 		public var m_display:DisplayObject;
 		
-		//
+		public var m_isWorking:Boolean;
 		
+		public var m_speed:Point;
+		public var m_maxSpeed:Number;
 		public var m_isMoving:Boolean;
+		
+		public var m_attachedTo:CellGridObject;
+		public var m_attachedOffset:Point;
+		public var m_attachedLength:Number;
+		public var m_attachedRotationSpeed:Number;
+		public var m_attachedList:Array;
 		
 		// consts
 		
@@ -41,7 +47,7 @@
 		
 		/* Constructor
 		*/
-		public function CellGridObject(radius:Number = 5, mass:Number = 1, maxSpeed:Number = 6):void {
+		public function CellGridObject(radius:Number = 5, mass:Number = 1, maxSpeed:Number = 10):void {
 			
 			m_dv = new Point(0, 0);
 			
@@ -63,11 +69,18 @@
 			m_isBitmapCached = true;
 			m_display = null;
 			
+			m_isWorking = false;
+			
+			m_speed = new Point(0, 0);
 			m_maxSpeed = maxSpeed;
-			
-			//
-			
 			m_isMoving = false;
+			
+			m_attachedTo = null;
+			m_attachedOffset = new Point(0, 0);
+			m_attachedLength = 0;
+			m_attachedRotationSpeed = 0;
+			m_attachedList = new Array();
+			
 		}
 		
 		/* AddToGrid
@@ -83,6 +96,14 @@
 			m_cover.SetGridObject(this);
 		}
 		
+		/* Update
+		* updates the grid object,
+		* used for polymorphism, and performing actions when working
+		*/
+		public function Update():void {
+			// nothing yet
+		}
+		
 		/* Move 
 		* moves the object and the grid cover and updates the location (note: not physical move)
 		*/
@@ -95,19 +116,32 @@
 			
 		}
 		
-		/* ObjectEnterGridCell
-		* called when another grid object enters a grid cell occupied by this grid
+		/* ChangeSpeedDirection
+		* changes the speed direction (without adding acceleration
 		*/
-		public function ObjectEnterGridCell(gridCell:Object, go:CellGridObject):void {
-			m_cover.GridObjectEnter(go);
+		public function ChangeSpeedDirection(dx:Number, dy:Number):void {
+			m_speed.x = dx;
+			m_speed.y = dy;
 		}
 		
-		/* ObjectLeaveGridCell
-		* called when another grid object leaves a grid cell occupied by this grid
+		/* Accelerate
+		* accelerates the grid object
 		*/
-		public function ObjectLeaveGridCell(gridCell:Object, go:CellGridObject):void {
-			m_cover.GridObjectLeave(go);
+		public function Accelerate(dx:Number, dy:Number):void {
+			m_speed.x += dx;
+			m_speed.y += dy;
 		}
+		
+		/* AttachGridObject
+		*/
+		public function AttachGridObject(go:CellGridObject, attachedLength:Number):void {
+			go.m_attachedTo = this;
+			go.m_attachedLength = attachedLength;
+			
+			m_attachedList.push(go);
+			
+		}
+		
 		
 		/* GridObjects
 		* gets all the grid objects (excluding this one) under the cover
@@ -115,6 +149,7 @@
 		public function GridObjects():Array {
 			return m_cover.GridObjects();
 		}
+		
 	}
 	
 }

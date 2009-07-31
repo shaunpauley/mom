@@ -48,20 +48,16 @@
 			
 		}
 		
-		/* CreateCoverCell
+		/* GenerateCoverCell
 		* overrided to include grabbing an existing sprite tile from the stock if needed,
 		* and adding it to the view display
 		*/
-		protected override function CreateCoverCell(gridCell:Object, 
+		protected override function GenerateCoverCell(coverCell:Object,
+		gridCell:Object, 
 		top:Object = null,
 		bottom:Object = null,
 		left:Object = null,
 		right:Object = null):Object {
-			
-			var cellCover:Object = super.CreateCoverCell(gridCell, top, bottom, left, right);
-			cellCover.cover = this;
-			
-			gridCell.viewCell = cellCover;
 			
 			var X:Number = 0;
 			var Y:Number = 0;
@@ -95,38 +91,52 @@
 				objectTile = new Sprite();
 			}
 			
-			cellCover.gridTile = gridTile;
-			cellCover.objectTile = objectTile;
-			cellCover.x = X;
-			cellCover.y = Y;
+			coverCell.gridTile = gridTile;
+			coverCell.objectTile = objectTile;
+			coverCell.x = X;
+			coverCell.y = Y;
 			
-			cellCover.gridTile.x = cellCover.x;
-			cellCover.gridTile.y = cellCover.y;
-			cellCover.objectTile.x = cellCover.x;
-			cellCover.objectTile.y = cellCover.y;
+			coverCell.gridTile.x = coverCell.x;
+			coverCell.gridTile.y = coverCell.y;
+			coverCell.objectTile.x = coverCell.x;
+			coverCell.objectTile.y = coverCell.y;
 			
-			for each (var go:CellGridObject in gridCell.objects) {
-				RegisterGridObject(cellCover, go);
-			}
+			DrawCellBorder(coverCell);
 			
-			if (CellWorld.c_debug) {
-				DrawCellBorder(cellCover);
-			}
+			m_viewer.AddGridTile(coverCell.gridTile);
+			m_viewer.AddObjectTile(coverCell.objectTile);
 			
-			m_viewer.AddGridTile(cellCover.gridTile);
-			m_viewer.AddObjectTile(cellCover.objectTile);
+			coverCell.cover = this;
+			
+			coverCell = super.GenerateCoverCell(coverCell, gridCell, top, bottom, left, right);
+			
 			
 			m_numTiles++;
 			
-			return cellCover;
+			return coverCell;
 		}
+		
+		/* GridObjectEnter
+		* adds the grid object to the set
+		*/
+		public override function GridObjectEnter(coverCell:Object, go:CellGridObject):void {
+			RegisterGridObject(coverCell, go);
+		}
+		
+		/* GridObjectLeave
+		* removes the grid object from the set
+		*/
+		public override function GridObjectLeave(coverCell:Object, go:CellGridObject):void {
+			UnregisterGridObject(coverCell, go);
+		}
+		
 		
 		/* RegisterGridObject
 		* registers a coverCell with a grid object.
 		* this places the grid object on the tile if not already registered, but also
 		* places coverCells on the stack so that the gridObject stays visible when it should
 		*/
-		public function RegisterGridObject(coverCell:Object, go:CellGridObject):void {
+		private function RegisterGridObject(coverCell:Object, go:CellGridObject):void {
 			if (!go.m_registered) {
 				
 				go.m_registered = coverCell;
@@ -150,7 +160,7 @@
 		* removes the grid object from the tile, but also adds to another existing tile if needed.
 		* this helps with keeping grid objects in view
 		*/
-		public function UnregisterGridObject(coverCell:Object, go:CellGridObject):void {
+		private function UnregisterGridObject(coverCell:Object, go:CellGridObject):void {
 			if (go.m_registered == coverCell) {
 				go.m_registered.objectTile.removeChild( go.m_sprite );
 				go.m_registered = null;
@@ -187,12 +197,6 @@
 		protected override function RemoveCoverCell(coverCell:Object):void {
 			super.RemoveCoverCell(coverCell);
 			
-			coverCell.cell.viewCell = null;
-			
-			for each (var go:CellGridObject in coverCell.cell.objects) {
-				UnregisterGridObject(coverCell, go);
-			}
-			
 			coverCell.gridTile.graphics.clear();
 			while(coverCell.gridTile.numChildren) {
 				coverCell.gridTile.removeChild(coverCell.gridTile.getChildAt(0));
@@ -218,9 +222,7 @@
 		public override function GrowCover(widthAmount:Number, heightAmount:Number):void {
 			super.GrowCover(widthAmount, heightAmount);
 			
-			if (CellWorld.c_debug) {
-				Draw(m_viewer.TopLayer());
-			}
+			Draw(m_viewer.TopLayer());
 		}
 		
 		/* ShiftCells

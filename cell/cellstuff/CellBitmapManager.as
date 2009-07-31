@@ -94,6 +94,7 @@
 			if (m_movieClipStack.length) {
 				var mc:CellMovieClip = m_movieClipStack.pop();
 				mc.Reset(cachedBitmap.GetSourceRectangle(), cachedBitmap.GetFrames());
+				mc.play();
 			} else {
 				mc = cachedBitmap.CreateNewMovieClipCached();
 			}
@@ -105,6 +106,7 @@
 		* removes a cell movie clip after use (puts it on the stack for further use)
 		*/
 		private function RemoveCellMovieClip(mc:CellMovieClip):void {
+			mc.stop();
 			m_movieClipStack.push(mc);
 		}
 		

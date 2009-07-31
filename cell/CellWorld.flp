@@ -8,7 +8,12 @@
     <project_file path='CellStuff\CellArea_TextDisplay.as' filetype='as'/>
     <project_file path='CellStuff\CellArea_Upgrade.as' filetype='as'/>
   </project_folder>
-  <project_folder expanded='true' name='CellGrid'>
+  <project_folder expanded='false' name='CellBitmap'>
+    <project_file path='CellStuff\CellBitmapManager.as' filetype='as'/>
+    <project_file path='CellStuff\CellCachedBitmapData.as' filetype='as'/>
+    <project_file path='CellStuff\CellMovieClip.as' filetype='as'/>
+  </project_folder>
+  <project_folder expanded='false' name='CellGrid'>
     <project_file path='CellStuff\CellGrid.as' filetype='as'/>
     <project_file path='CellStuff\CellGridCover.as' filetype='as'/>
     <project_file path='CellStuff\CellGridDisplay.as' filetype='as'/>
@@ -48,11 +53,8 @@
     <project_file path='CellStuff\CellProt_Worm.as' filetype='as'/>
   </project_folder>
   <project_file path='CellStuff\CellBackground.as' filetype='as'/>
-  <project_file path='CellStuff\CellBitmapManager.as' filetype='as'/>
-  <project_file path='CellStuff\CellCachedBitmapData.as' filetype='as'/>
   <project_file path='CellStuff\CellCreator.as' filetype='as'/>
   <project_file path='CellStuff\CellGridViewer.as' filetype='as'/>
-  <project_file path='CellStuff\CellMovieClip.as' filetype='as'/>
   <project_file path='CellStuff\CellNucleus.as' filetype='as'/>
   <project_file path='CellStuff\CellPerformanceStatistics.as' filetype='as'/>
   <project_file path='CellStuff\CellPhysics.as' filetype='as'/>
@@ -63,6 +65,7 @@
   <project_file path='CellViewerTest.as' filetype='as'/>
   <project_file path='CellWorld.as' filetype='as'/>
   <project_file path='CellStuff\CellWorldMap.as' filetype='as'/>
+  <project_file path='CellStuff\CellWorldWorker.as' filetype='as'/>
   <project_file path='CellStuff\GridObject.as' filetype='as'/>
   <project_file path='CellStuff\HelpToolTip.as' filetype='as'/>
 </flash_project>

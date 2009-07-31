@@ -62,7 +62,7 @@
 		* quickly creates the cover by growing cells to the right and then growing the row down
 		*/
 		private function CoverInit(gridCell:Object):void {
-			m_topLeft = CreateCoverCell(gridCell);
+			m_topLeft = GenerateCoverCell(new Object(), gridCell);
 			m_topRight = m_topLeft;
 			m_bottomLeft = m_topLeft;
 			m_bottomRight = m_topLeft;
@@ -70,7 +70,7 @@
 			var current:Object = m_topLeft;
 			m_endOffset.x = m_startOffset.x + m_width;
 			while(m_endOffset.x > m_cellWidth) {
-				current = CreateCoverCell(current.cell.right, null, null, current);
+				current = GenerateCoverCell(new Object(), current.cell.right, null, null, current);
 				m_endOffset.x -= m_cellWidth;
 				m_topRight = m_topRight.right;
 				m_bottomRight = m_topRight;
@@ -85,16 +85,24 @@
 			}
 		}
 		
-		/* CreateCoverCell
-		* creates a linked cover cell
+		/* GenerateCoverCell
+		* generates a linked cover cell
 		*/
-		protected function CreateCoverCell(gridCell:Object, 
+		protected function GenerateCoverCell(coverCell:Object,
+		gridCell:Object, 
 		top:Object = null,
 		bottom:Object = null,
 		left:Object = null,
 		right:Object = null):Object {
 			
-			var coverCell:Object = {cover:this, cell:gridCell, top:top, bottom:bottom, left:left, right:right};
+			if (!coverCell.cover) {
+				coverCell.cover = this;
+			}
+			coverCell.cell = gridCell;
+			coverCell.top = top;
+			coverCell.bottom = bottom;
+			coverCell.left = left;
+			coverCell.right = right;
 			
 			if (top) {
 				top.bottom = coverCell;
@@ -109,8 +117,11 @@
 				right.left = coverCell;
 			}
 			
+			// add cover and objects to the gridcell
 			if (m_gridObject) {
-				m_cellGrid.AddObject(gridCell, m_gridObject);
+				m_cellGrid.AddGridObjectAndCoverCell(gridCell, m_gridObject, coverCell);
+			} else {
+				m_cellGrid.AddCoverCell(gridCell, coverCell);
 			}
 			
 			return coverCell;
@@ -125,10 +136,10 @@
 			while (current) {
 				
 				if (isLeft) {
-					current.left = CreateCoverCell(current.cell.left, previous, null, null, current);
+					current.left = GenerateCoverCell(new Object(), current.cell.left, previous, null, null, current);
 					previous = current.left;
 				} else {
-					current.right = CreateCoverCell(current.cell.right, previous, null, current);
+					current.right = GenerateCoverCell(new Object(), current.cell.right, previous, null, current);
 					previous = current.right;
 				}
 				
@@ -146,10 +157,10 @@
 			while (current) {
 				
 				if (isTop) {
-					current.top = CreateCoverCell(current.cell.top, null, current, previous);
+					current.top = GenerateCoverCell(new Object(), current.cell.top, null, current, previous);
 					previous = current.top;
 				} else {
-					current.bottom = CreateCoverCell(current.cell.bottom, current, null, previous);
+					current.bottom = GenerateCoverCell(new Object(), current.cell.bottom, current, null, previous);
 					previous = current.bottom;
 				}					
 				
@@ -332,9 +343,11 @@
 			coverCell.left = null;
 			coverCell.right = null;
 			
-			// remove any objects part of this cover
+			// remove any objects and grid part of this cover
 			if (m_gridObject) {
-				m_cellGrid.RemoveObject(coverCell.cell, m_gridObject);
+				m_cellGrid.RemoveGridObjectAndCoverCell(coverCell.cell, m_gridObject, coverCell);
+			} else {
+				m_cellGrid.RemoveCoverCell(coverCell.cell, coverCell);
 			}
 			
 		}
@@ -354,7 +367,8 @@
 			while (currentRow) {
 				var current:Object = currentRow;
 				while (current) {
-					m_cellGrid.AddObject(current.cell, m_gridObject);
+					m_cellGrid.RemoveCoverCell(current.cell, current);
+					m_cellGrid.AddGridObjectAndCoverCell(current.cell, m_gridObject, current);
 					current = current.right;
 				}
 				currentRow = currentRow.bottom;
@@ -370,7 +384,8 @@
 			while (currentRow) {
 				var current:Object = currentRow;
 				while (current) {
-					m_cellGrid.RemoveObject(current.cell, m_gridObject);
+					m_cellGrid.RemoveGridObjectAndCoverCell(current.cell, m_gridObject, current);
+					m_cellGrid.AddCoverCell(current.cell, current);
 					current = current.right;
 				}
 				currentRow = currentRow.bottom;
@@ -391,7 +406,7 @@
 		/* GridObjectEnter
 		* adds the grid object to the set
 		*/
-		public function GridObjectEnter(go:CellGridObject):void {
+		public function GridObjectEnter(coverCell:Object, go:CellGridObject):void {
 			if (m_gridObjectSet[go]) {
 				m_gridObjectSet[go] += 1;
 			} else {
@@ -403,7 +418,7 @@
 		/* GridObjectLeave
 		* removes the grid object from the set
 		*/
-		public function GridObjectLeave(go:CellGridObject):void {
+		public function GridObjectLeave(coverCell:Object, go:CellGridObject):void {
 			if (m_gridObjectSet[go]) {
 				m_gridObjectSet[go] -= 1;
 				if (m_gridObjectSet[go] <= 0) {
@@ -439,6 +454,13 @@
 			p.y = m_startOffset.y + m_height/2 + m_topLeft.cell.row*m_cellHeight;
 			
 			return p;
+		}
+		
+		/* GetWorldCenter
+		* returns the cover center in world coordinates
+		*/
+		public function GetWorldCenter():Point {
+			return m_worldCenter;
 		}
 		
 		/* Draw
@@ -505,6 +527,21 @@
 			startRow:startRow,
 			width:width,
 			height:height};
+		}
+		
+		public static function CreateGridCoverData_World(cellGrid:CellGridLocations,
+		startWorld:Point,
+		width:Number,
+		height:Number):Object {
+			var col:int = cellGrid.GetColFromWorld(startWorld);
+			var row:int = cellGrid.GetRowFromWorld(startWorld);
+			
+			return CreateGridCoverDataFull(cellGrid,
+			cellGrid.WorldToLocal(startWorld.clone(), col, row),
+			col,
+			row,
+			width,
+			height);
 		}
 		
 		public static function CreateGridCoverData_GridObject(cellGrid:CellGridLocations, go:CellGridObject):Object {

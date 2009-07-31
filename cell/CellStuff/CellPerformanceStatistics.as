@@ -14,7 +14,8 @@
 		
 		// grid
 		public var m_numGridCells:int;
-		public var m_numOccupiedGridCells:int;
+		public var m_numGridCellsOccupiedByObjects:int;
+		public var m_numGridCellsOccupiedByCovers:int;
 		public var m_numStockGridCells:int;
 		public var m_numGridColumns:int;
 		public var m_numGridRows:int;
@@ -38,9 +39,14 @@
 		public var m_numBitmapLibraryEntries:int;
 		public var m_numMovieClips:int;
 		
+		// world worker
+		public var m_numWorkingGridObjects:int;
+		public var m_numWorkingFullTimers:int;
+		
 		// private
 		private var m_physics:CellPhysics;
 		private var m_viewer:CellGridViewer;
+		private var m_worker:CellWorldWorker;
 		
 		private var m_firstTime:uint;
 		private var m_secondTime:uint;
@@ -52,9 +58,10 @@
 		
 		/* Constructor
 		*/
-		public function CellPerformanceStatistics(physics:CellPhysics, viewer:CellGridViewer):void {
+		public function CellPerformanceStatistics(physics:CellPhysics, viewer:CellGridViewer, worker:CellWorldWorker):void {
 			m_physics = physics;
 			m_viewer = viewer;
+			m_worker = worker;
 			
 			m_data = new String();
 			
@@ -84,13 +91,21 @@
 				m_fps = m_frameCount / (m_firstTime - m_secondTime + 1000)*1000;
 				m_frameCount = 0;
 				m_secondTime = m_firstTime + 1000;
+				
+				if (m_physics) {
+					m_physics.UpdatePerformanceStatistics(this);
+				}
+				if (m_viewer) {
+					m_viewer.UpdatePerformanceStatistics(this);
+				}
+				if (m_worker) {
+					m_worker.UpdatePerformanceStatistics(this);
+				}
+				
+				UpdateData();
 			}
 			++m_frameCount;
 			
-			m_physics.UpdatePerformanceStatistics(this);
-			m_viewer.UpdatePerformanceStatistics(this);
-			
-			UpdateData();
 		}
 		
 		public function UpdateData():void {
@@ -99,7 +114,8 @@
 			m_data += "statistics:\n";
 			m_data += "grid:\n";
 			m_data += "\tnum grid cells: " + m_numGridCells + "\n";
-			m_data += "\tnum occupied grid cells: " + m_numOccupiedGridCells + "\n";
+			m_data += "\tnum objects occupying grid cells: " + m_numGridCellsOccupiedByObjects + "\n";
+			m_data += "\tnum covers occupying grid cells: " + m_numGridCellsOccupiedByCovers + "\n";
 			m_data += "\tnum stock grid cells: " + m_numStockGridCells + "\n";
 			m_data += "\tnum grid columns: " + m_numGridColumns + "\n";
 			m_data += "\tnum grid rows: " + m_numGridRows + "\n";
@@ -118,6 +134,9 @@
 			m_data += "bitmap manager:\n";
 			m_data += "\tnum bitmap library entries: " + m_numBitmapLibraryEntries + "\n";
 			m_data += "\tnum movie clips: " + m_numMovieClips + "\n";
+			m_data += "world worker:\n";
+			m_data += "\tnum grid objects under work cover: " + m_numWorkingGridObjects + "\n";
+			m_data += "\tnum full time workers: " + m_numWorkingFullTimers + "\n";
 			
 			m_textField.text = m_data;
 		}

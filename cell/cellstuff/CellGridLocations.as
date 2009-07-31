@@ -139,6 +139,13 @@ package CellStuff {
 			return CalculateDistanceVector(dv, dx, dy);
 		}
 		
+		public function CalculateDistanceVector_LocalToGridObject(dv:Point, p:Point, col:int, row:int, go:CellGridObject):Point {
+			var dx:Number = go.m_localPoint.x - p.x + (go.m_col - col)*m_cellWidth;
+			var dy:Number = go.m_localPoint.y - p.y + (go.m_row - row)*m_cellHeight;
+			
+			return CalculateDistanceVector(dv, dx, dy);
+		}
+		
 		/* GetGridCellFromWorld
 		* returns the grid cell from the world position
 		*/

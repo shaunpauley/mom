@@ -19,7 +19,8 @@ package CellStuff {
 		
 		private var m_idcount:int;
 		
-		private var m_numOccupied:int;
+		private var m_numOccupiedByObjects:int;
+		private var m_numOccupiedByCovers:int;
 		
 		// consts
 		private static const c_defaultCols:Number = 20;
@@ -49,11 +50,13 @@ package CellStuff {
 			m_cols = gridData.cols;
 			m_rows = gridData.rows;
 			
-			
 			// init
 			while(m_cells.length) {
 				RemoveGridCell(m_cells.pop());
 			}
+			
+			m_numOccupiedByObjects = 0;
+			m_numOccupiedByCovers = 0;
 			
 			for (var r:int = 0; r < m_rows; ++r) {
 				for (var c:int = 0; c < m_cols; ++c) {
@@ -78,7 +81,7 @@ package CellStuff {
 			if (m_stockCells.length > 0) {
 				var newCell:Object = m_stockCells.pop();
 			} else {
-				newCell = {col:c, row:r, id:++m_idcount, objects:new Array(), viewCell:null};
+				newCell = {col:c, row:r, id:++m_idcount, objects:new Array(), coverCells:new Array()};
 			}
 			
 			return ResetGridCell(newCell);
@@ -100,7 +103,9 @@ package CellStuff {
 				gridCell.objects.pop();
 			}
 			
-			gridCell.viewCell = null;
+			while(gridCell.coverCells.length) {
+				gridCell.coverCells.pop();
+			}
 			
 			if (gridCell.top) {
 				gridCell.top.bottom = gridCell;
@@ -127,50 +132,177 @@ package CellStuff {
 			return m_cells[c%m_cols + (r%m_rows)*m_cols];
 		}
 		
-		/* AddObject
-		* adds any object to the list of objects in a grid cell
-		* also, notifies all objects in the cell that the object has entered
+		/* PushGridObject
+		* pushes the gridobject in the list of gridCells
 		*/
-		public function AddObject(gridCell:Object, go:CellGridObject):void {
-			for each (var go2:CellGridObject in gridCell.objects) {
-				go2.ObjectEnterGridCell(gridCell, go);
-				go.ObjectEnterGridCell(gridCell, go2);
+		private function PushGridObject(gridCell:Object, go:CellGridObject):void {
+			/*
+			var i:int = gridCell.objects.indexOf(go);
+			if (i < 0) {
+				gridCell.objects.push(go);
+			} else {
+				throw( new Error("AddGridObject: Cannot add gridobject because gridobject already exists") );
 			}
-			
-			if (gridCell.viewCell) {
-				gridCell.viewCell.cover.RegisterGridObject(gridCell.viewCell, go);
-			}
-			
+			*/
 			gridCell.objects.push(go);
-			m_numOccupied++;
 		}
 		
-		/* RemoveObject
-		* removes the object if exists from the grid cell.
-		* also, notifies all objects in the cell that the object has left
+		/* SpliceGridObject
+		* removes the gridobject from the list of gridCells
 		*/
-		public function RemoveObject(gridCell:Object, go:CellGridObject):void {
+		private function SpliceGridObject(gridCell:Object, go:CellGridObject):void {
 			var i:int = gridCell.objects.indexOf(go);
 			if (i > -1) {
-				
-				for each (var go2:CellGridObject in gridCell.objects) {
-					go2.ObjectLeaveGridCell(gridCell, go);
-					go.ObjectLeaveGridCell(gridCell, go2);
-				}
-				
-				if (gridCell.viewCell) {
-					gridCell.viewCell.cover.UnregisterGridObject(gridCell.viewCell, go);
-				}
-				
 				gridCell.objects.splice(i, 1);
-				m_numOccupied--;
+			} else {
+				throw( new Error("SpliceGridObject: Cannot remove object because object does not exit") );
 			}
+		}
+		
+		/* PushCoverCell
+		* pushes the covercell in the list of coverCells
+		*/
+		private function PushCoverCell(gridCell:Object, coverCell:Object):void {
+			/*
+			var i:int = gridCell.objects.indexOf(go);
+			if (i < 0) {
+				gridCell.objects.push(go);
+			} else {
+				throw( new Error("AddGridObject: Cannot add gridobject because gridobject already exists") );
+			}
+			*/
+			gridCell.coverCells.push(coverCell);
+		}
+		
+		/* SpliceCoverCell
+		* removes the covercell from the list of coverCells
+		*/
+		private function SpliceCoverCell(gridCell:Object, coverCell:Object):void {
+			var i:int = gridCell.coverCells.indexOf(coverCell);
+			if (i > -1) {
+				gridCell.coverCells.splice(i, 1);
+			} else {
+				throw( new Error("SpliceCoverCell: Cannot remove object because object does not exit") );
+			}
+		}
+		
+		/* AddGridObject
+		* adds any object to the list of objects in a grid cell
+		* also, notifies all covers in the cell that the object has entered.
+		* Note, that this method should only be used by objects that don't need a cell cover,
+		* which may be very rare.
+		*/
+		public function AddGridObject(gridCell:Object, go:CellGridObject):void {
+			for each (var coverCell2:Object in gridCell.coverCells) {
+				coverCell2.cover.GridObjectEnter(coverCell2, go);
+			}
+			
+			PushGridObject(gridCell, go);
+			
+			m_numOccupiedByObjects++;
+		}
+		
+		/* RemoveGridObject
+		* removes the object if exists from the grid cell.
+		* also, notifies all covers in the cell that the object has left
+		* Note, that this method should only be used by objects that don't need a cell cover,
+		* which may be very rare.
+		*/
+		public function RemoveGridObject(gridCell:Object, go:CellGridObject):void {
+			SpliceGridObject(gridCell, go);
+			
+			m_numOccupiedByObjects--;
+			
+			for each (var coverCell2:Object in gridCell.coverCells) {
+				coverCell2.cover.GridObjectLeave(coverCell2, go);
+			}
+		}
+		
+		/* AddCoverCell
+		* adds a covercell to the list of covercells in a grid cell
+		* also notifies the new covercell of all gridobjects in the grid cell,
+		* Note, that this method should only be used by covers that don't have gridobjects,
+		* ie. viewcover, and any sightcovers
+		*/
+		public function AddCoverCell(gridCell:Object, coverCell:Object):void {
+			for each (var go2:CellGridObject in gridCell.objects) {
+				coverCell.cover.GridObjectEnter(coverCell, go2);
+			}
+			
+			PushCoverCell(gridCell, coverCell);
+			
+			m_numOccupiedByCovers++;
+			
+		}
+		
+		/* RemoveCoverCell
+		* removes a covercell from the list of covercells in a grid cell
+		* also notifies of leaving the new covercell of all gridobjects in the grid cell,
+		* Note, that this method should only be used by covers that don't have gridobjects,
+		* ie. viewcover, and any sightcovers
+		*/
+		public function RemoveCoverCell(gridCell:Object, coverCell:Object):void {
+			SpliceCoverCell(gridCell, coverCell);
+			
+			m_numOccupiedByCovers--;
+			
+			for each (var go2:CellGridObject in gridCell.objects) {
+				coverCell.cover.GridObjectLeave(coverCell, go2);
+			}
+			
+		}
+		
+		/* AddGridObjectAndCoverCell
+		* adds a gridobject and a covercell to the grid cell, while preserving that the
+		* covercell and gridobject do not notify each other, this is useful for all grid objects
+		* and collision detection.
+		* use this method when adding grid objects.
+		*/
+		public function AddGridObjectAndCoverCell(gridCell:Object, go:CellGridObject, coverCell:Object):void {
+			for each (var coverCell2:Object in gridCell.coverCells) {
+				coverCell2.cover.GridObjectEnter(coverCell2, go);
+			}
+			
+			for each (var go2:CellGridObject in gridCell.objects) {
+				coverCell.cover.GridObjectEnter(coverCell, go2);
+			}
+			
+			PushGridObject(gridCell, go);
+			m_numOccupiedByObjects++;
+			
+			PushCoverCell(gridCell, coverCell);
+			m_numOccupiedByCovers++;
+			
+		}
+		
+		/* RemoveGridObjectAndCoverCell
+		* adds a gridobject and a covercell to the grid cell, while preserving that the
+		* covercell and gridobject do not notify each other, this is useful for all grid objects
+		* and collision detection.
+		* use this method when adding grid objects.
+		*/
+		public function RemoveGridObjectAndCoverCell(gridCell:Object, go:CellGridObject, coverCell:Object):void {
+			SpliceGridObject(gridCell, go);
+			m_numOccupiedByObjects--;
+			
+			SpliceCoverCell(gridCell, coverCell);
+			m_numOccupiedByCovers--;
+			
+			for each (var coverCell2:Object in gridCell.coverCells) {
+				coverCell2.cover.GridObjectLeave(coverCell2, go);
+			}
+			
+			for each (var go2:CellGridObject in gridCell.objects) {
+				coverCell.cover.GridObjectLeave(coverCell, go2);
+			}
+			
 		}
 		
 		/* RemoveGridCell
 		* removes the grid cell's adjacent links
 		* and places the grid cell on the stock.
-		* Note, that this does not actually remove the cell from the array of cells.
+		* Note, that this does not actually remove the cell from the array of cells,
+		* and doesn't notify anything
 		*/
 		private function RemoveGridCell(gridCell:Object):void {
 			if (gridCell.top) {
@@ -192,6 +324,10 @@ package CellStuff {
 			
 			while(gridCell.objects.length) {
 				gridCell.objects.pop();
+			}
+			
+			while(gridCell.cellCovers.length) {
+				gridCell.cellCovers.pop();
 			}
 			
 			m_stockCells.push(gridCell);
@@ -245,7 +381,8 @@ package CellStuff {
 		*/
 		public function UpdatePerformanceStatistics(pStats:CellPerformanceStatistics):CellPerformanceStatistics {
 			pStats.m_numGridCells = m_cells.length;
-			pStats.m_numOccupiedGridCells = m_numOccupied;
+			pStats.m_numGridCellsOccupiedByObjects = m_numOccupiedByObjects;
+			pStats.m_numGridCellsOccupiedByCovers = m_numOccupiedByCovers;
 			pStats.m_numStockGridCells = m_stockCells.length;
 			pStats.m_numGridColumns = m_cols;
 			pStats.m_numGridRows = m_rows;
