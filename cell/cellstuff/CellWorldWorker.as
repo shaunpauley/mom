@@ -17,6 +17,9 @@
 		
 		private var m_numGridObjectsUnderCover:int;
 		
+		private var m_tempArray:Array;
+		private var m_tempPoint:Point;
+		
 		// consts
 		
 		public static const c_workCoverWidth:Number = 800;
@@ -33,6 +36,9 @@
 			
 			m_fullTimeWorkers = new Array();
 			
+			m_tempArray = new Array();
+			m_tempPoint = new Point(0, 0);
+			
 			addEventListener(Event.ENTER_FRAME, Update, false, 0, true);
 		}
 		
@@ -40,7 +46,7 @@
 		* called every ENTER_FRAME,
 		* this causes an Update call to the list of gridobjects under the watch
 		*/
-		public function Update(event:Event):void {
+		private function Update(event:Event):void {
 			
 			var objectList:Array = m_workCover.GridObjects();
 			m_numGridObjectsUnderCover = objectList.length;
@@ -55,6 +61,9 @@
 				
 				PreMotion(go);
 				MotionHandler(go);
+				if (go.m_hasMoved) {
+					PostMotion(go);
+				}
 			}
 			
 			for each (go in m_fullTimeWorkers) {
@@ -64,6 +73,9 @@
 					
 					PreMotion(go);
 					MotionHandler(go);
+					if (go.m_hasMoved) {
+						PostMotion(go);
+					}
 				}
 			}
 		}
@@ -72,10 +84,10 @@
 		* calculates any premotion values that are needed,
 		* such as attached or animation values
 		*/
-		public function PreMotion(go:CellGridObject):void {
+		private function PreMotion(go:CellGridObject):void {
 			if (go.m_attachedTo) {
 				
-				var dv:Point = m_cellGrid.CalculateDistanceVector_LocalToGridObject(go.m_attachedOffset, go.m_localPoint, go.m_col, go.m_row, go.m_attachedTo);
+				var dv:Point = m_cellGrid.CalculateDistanceVector_GridObjects(go.m_attachedOffset, go, go.m_attachedTo);
 				var length:Number = Math.sqrt(dv.x*dv.x + dv.y*dv.y);
 				
 				if (length > go.m_attachedLength + 10) {
@@ -92,12 +104,14 @@
 				}
 				
 			}
+			
+			go.m_hasMoved = false;
 		}
 		
 		/* MotionHandler
 		* handles any motions the objects might need to do
 		*/
-		public function MotionHandler(go:CellGridObject):void {
+		private function MotionHandler(go:CellGridObject):void {
 			
 			var signX:int = go.m_speed.x<0?-1:1;
 			var signY:int = go.m_speed.y<0?-1:1;
@@ -122,7 +136,58 @@
 				if (newSignY != signY) {
 					go.m_speed.y = 0;
 				}
+				
+			}
+		}
+		
+		/* PostMotion
+		*/
+		private function PostMotion(go:CellGridObject):void {
+			if (go.m_isArea) {
+				for each (var go2:CellGridObject in go.m_objectsInArea) {
+					var dv:Point = m_cellGrid.CalculateDistanceVector_GridObjects(m_tempPoint, go, go2);
+					if (dv.x*dv.x + dv.y*dv.y > (go.m_radius+go2.m_radius)*(go.m_radius+go2.m_radius)) {
+						// objects left
+						m_tempArray.push(go2);
+					} else {
+						// object still in
+						go.AreaUpdate(go2, dv);
+					}
+				}
+				
+				while(m_tempArray.length) {
+					go.AreaLeave(m_tempArray.pop());
+				}
+			}
 			
+			if (go.m_areasIn.length) {
+				for each (go2 in go.m_areasIn) {
+					dv = m_cellGrid.CalculateDistanceVector_GridObjects(m_tempPoint, go, go2);
+					if (dv.x*dv.x + dv.y*dv.y > (go.m_radius+go2.m_radius)*(go.m_radius+go2.m_radius)) {
+						// object left
+						m_tempArray.push(go2);
+					} 
+				}
+				
+				while(m_tempArray.length) {
+					go2 = m_tempArray.pop();
+					go2.AreaLeave(go);
+				}
+			}
+		}
+		
+		/* GridObjectSpitOutAll
+		* spit out all the grid objects that are absorbed
+		*/
+		public function GridObjectSpitOutAll(go:CellGridObject):void {
+			while (go.m_absorbedList.length) {
+				var goAbsorbed:CellGridObject = go.m_absorbedList.pop();
+				goAbsorbed.m_absorbedIn = null;
+				m_physics.CreateCoverAndAddToGrid(goAbsorbed, goAbsorbed.m_localPoint, goAbsorbed.m_col, goAbsorbed.m_row);
+				
+				var squared:Number = goAbsorbed.m_radius*goAbsorbed.m_radius;
+				go.m_absorbAreaLeft += (squared + squared/(go.m_radius*go.m_radius));
+				go.m_isFull = (go.m_absorbAreaLeft <= 1);			
 			}
 		}
 		

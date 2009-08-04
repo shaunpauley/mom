@@ -146,6 +146,13 @@ package CellStuff {
 			return CalculateDistanceVector(dv, dx, dy);
 		}
 		
+		public function CalculateDistanceVector_GridObjects(dv:Point, go1:CellGridObject, go2:CellGridObject):Point {
+			var dx:Number = go2.m_localPoint.x - go1.m_localPoint.x + (go2.m_col - go1.m_col)*m_cellWidth;
+			var dy:Number = go2.m_localPoint.y - go1.m_localPoint.y + (go2.m_row - go1.m_row)*m_cellHeight;
+			
+			return CalculateDistanceVector(dv, dx, dy);
+		}
+		
 		/* GetGridCellFromWorld
 		* returns the grid cell from the world position
 		*/

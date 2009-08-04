@@ -27,7 +27,7 @@ package CellStuff {
 		
 		/* Constructor
 		*/
-		public function CellGridViewer(viewerData:Object):void {
+		public function CellGridViewer(cellGrid:CellGridLocations,viewerData:Object):void {
 			
 			m_focusGridObject =  viewerData.focus;
 			
@@ -43,7 +43,7 @@ package CellStuff {
 			
 			m_bitmapManager = new CellBitmapManager();
 			
-			m_viewCover = new CellViewCover(viewerData.coverData, m_bitmapManager);
+			m_viewCover = new CellViewCover(cellGrid, viewerData.coverData, m_bitmapManager);
 			m_workCover = null;
 			
 			addEventListener(Event.ENTER_FRAME, Update, false, 0, true);
@@ -135,6 +135,20 @@ package CellStuff {
 			m_objectLayer.removeChild(sprite);
 		}
 		
+		/* AddTopTile
+		* adds a sprite tile to the top layer
+		*/
+		public function AddTopTile(sprite:Sprite):void {
+			m_topLayer.addChild(sprite);
+		}
+		
+		/* RemoveTopTile
+		* removes a sprite tile from the top layer
+		*/
+		public function RemoveTopTile(sprite:Sprite):void {
+			m_topLayer.removeChild(sprite);
+		}
+		
 		/* TopLayer
 		* access to the top layer
 		*/
@@ -203,14 +217,5 @@ package CellStuff {
 			return {coverData:coverData, focus:null};
 		}
 		
-		// unit tests
-		public static function UnitTest(sprite:Sprite):void {
-			trace("***BEGIN CellGridViewer UNIT TEST***");
-			var testViewer:CellGridViewer = new CellGridViewer( CreateViewerData( new CellGridLocations(CellGridLocations.CreateGridLocationsData()) ) );
-			sprite.addChild(testViewer);
-			trace("TEST 1) INIT");
-			trace(testViewer.ToString());
-			trace("***END CellGridViewer UNIT TEST***");
-		}
 	}
 }

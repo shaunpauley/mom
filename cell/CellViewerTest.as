@@ -26,8 +26,6 @@
 		
 		private var m_moveDirection:Point;
 		
-		private var m_bitmapData:CellCachedBitmapData;
-		
 		private var m_worker:CellWorldWorker;
 		
 		private var m_worldSprite:Sprite;
@@ -83,45 +81,49 @@
 			m_cellGrid = new CellGridLocations( CellGridLocations.CreateGridLocationsData() );
 			m_physics = new CellPhysics(m_cellGrid);
 			
-			//go.m_isDrawn = true;
 			
 			var go2:CellGridObject = new CellGridObject(20);
-			go2.AddToGrid(m_cellGrid, new Point(0, 25), 5, 6);
-			go2.m_isDrawn = true;
+			m_physics.CreateCoverAndAddToGrid(go2, new Point(0, 25), 5, 6);
+			go2.m_isDrawn = false;
 			
-			var go3:CellGridObject = new CellGridObject(30);
-			go3.AddToGrid(m_cellGrid, new Point(75, 5), 4, 5);
-			go3.m_isDrawn = true
-			go3.AttachGridObject(go2, 120);
-			go2.m_attachedRotationSpeed = 1;
+			var go3:CellGridObject = new CellGridObject(30, 10);
+			m_physics.CreateCoverAndAddToGrid(go3, new Point(100, 100), 4, 5);
+			go3.m_isDrawn = true;
 			m_moveObject = go3;
+			//m_moveObject.AttachGridObject(go2, 120);
+			//go2.m_attachedRotationSpeed = 1;
+			//go3.m_isArea = true;
+			//go3.m_isAbsorbing = true;
 			
-			go = new CellGridObject(300, 100);
-			go.AddToGrid(m_cellGrid, new Point(20, 45), 18, 19);
-			go.m_isBitmapCached = false;
+			var go4:CellGridObject = new CellGridObject(300, 100);
+			m_physics.CreateCoverAndAddToGrid(go4, new Point(20, 45), 18, 19);
+			//go4.m_isBitmapCached = false;
+			go4.m_isDrawn = true;
 			
 			for (var i:int = 0; i < 100; ++i) {
-				var go:CellGridObject = new CellGridObject(Math.random()*30 + 2, CellGridObject.c_maxMass-1);
-				m_physics.AddToGrid(go, new Point(100*Math.random(), 100*Math.random()), int(Math.random()*20), int(Math.random()*20) );
-				//go3.AttachGridObject(go, Math.random()*300 + 30 + go.m_radius);
+				var go:CellGridObject = new CellGridObject(Math.random()*20 + 2, 0);
+				m_physics.CreateCoverAndAddToGrid(go, new Point(100*Math.random(), 100*Math.random()), int(Math.random()*20), int(Math.random()*20) );
+				//m_moveObject.AttachGridObject(go, Math.random()*300 + 30 + go.m_radius);
 				//go.m_attachedRotationSpeed = Math.random()*-2+1;
+				//go.m_isDrawn = true;
 			}
 			
-			var go4:CellGridObject = new CellGridObject(10, 0);
-			go4.AddToGrid(m_cellGrid, new Point(20, 25), 5, 5);
-			go3.AttachGridObject(go4, 70);
-			go4.m_attachedRotationSpeed = -1;
+			var go5:CellGridObject = new CellGridObject(10, 0);
+			m_physics.CreateCoverAndAddToGrid(go5, new Point(20, 25), 5, 5);
+			go5.m_isDrawn = true;
+			go2.AttachGridObject(go5, 70);
+			go5.m_attachedRotationSpeed = -1;
 			
-			m_bitmapData = new CellCachedBitmapData( new PhysFlower() );
+			//go3.m_isAbsorbing = true;
 			
 			var viewerData:Object = CellGridViewer.CreateViewerData(m_cellGrid);
-			m_viewer = new CellGridViewer( viewerData );
+			m_viewer = new CellGridViewer(m_cellGrid, viewerData);
 			m_viewer.SetFocusGridObject(m_moveObject);
 			
 			m_worldSprite.addChild(m_viewer);
 			
 			var workCoverData:Object = CellWorldWorker.CreateWorkCoverData(m_cellGrid, m_viewer);
-			var workCover:CellGridCover = new CellGridCover(workCoverData);
+			var workCover:CellGridCover = new CellGridCover(m_cellGrid, workCoverData);
 			m_worker = new CellWorldWorker(m_cellGrid, m_physics, workCover);
 			m_worker.AddGridObjectAsFullTimer(m_moveObject);
 			m_worker.AddGridObjectAsFullTimer(go2);
@@ -204,7 +206,12 @@
 			isKeyH &&= !(event.keyCode == c_key_h);
 			
 			if (event.keyCode == c_key_spacebar) {
-				trace(m_moveObject.m_cover.ToString());
+				if (m_moveObject.m_isAbsorbing) {
+					m_moveObject.m_isAbsorbing = false;
+					m_worker.GridObjectSpitOutAll(m_moveObject);
+				} else {
+					m_moveObject.m_isAbsorbing = true;
+				}
 			}
 		}
 		

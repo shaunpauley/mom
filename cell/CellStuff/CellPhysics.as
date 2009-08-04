@@ -6,8 +6,12 @@
 		
 		private var m_cellGrid:CellGridLocations;
 		
-		private var m_contactStack:Object;
+		private var m_contactStack:Array;
 		private var m_pointStack:Array;
+		
+		private var m_stockCovers:Array;
+		
+		private var m_numActiveCovers:int;
 		
 		// consts
 		public static const c_maxRecursions:int = 5;
@@ -19,6 +23,10 @@
 			
 			m_contactStack = new Array();
 			m_pointStack = new Array();
+			
+			m_stockCovers = new Array();
+			
+			m_numActiveCovers = 0;
 		}
 		
 		/* NewContact
@@ -84,6 +92,28 @@
 			m_pointStack.push(p);
 		}
 		
+		/* NewCover
+		* grabs a new cover from the stock, if none, then creates a new cover
+		*/
+		public function NewCover(coverData:Object):CellGridCover {
+			if (m_stockCovers.length) {
+				var newCover:CellGridCover = m_stockCovers.pop();
+				newCover.ResetCover(coverData);
+			} else {
+				newCover = new CellGridCover(m_cellGrid, coverData);
+			}
+			m_numActiveCovers++;
+			return newCover;
+		}
+		
+		/* StockCover
+		* pushes the existing cover on the stock
+		*/
+		public function StockCover(gridCover:CellGridCover):void {
+			m_stockCovers.push(gridCover);
+			m_numActiveCovers--;
+		}
+		
 		/* FlushStacks
 		* flushes the stack (in case of too much memory)
 		*/
@@ -91,18 +121,47 @@
 			while (m_pointStack.length) {
 				m_pointStack.pop();
 			}
+			
 			while (m_contactStack.length) {
 				m_contactStack.pop();
 			}
+			
+			while(m_stockCovers.length) {
+				m_stockCovers.pop();
+			}
+			
 		}
 		
-		/* AddToGrid
+		/* CreateCoverAndAddToGrid
 		* adds an object to the grid, but also handles physics at the same time.
 		* this is useful to make sure objects don't overlap at the start
 		*/
-		public function AddToGrid(go:CellGridObject, localPoint:Point, col:int, row:int):void {
-			go.AddToGrid(m_cellGrid, localPoint, col, row);
+		public function CreateCoverAndAddToGrid(go:CellGridObject, localPoint:Point, col:int, row:int):void {
+			go.SetLocal(localPoint, col, row);
+			//m_cover = new CellGridCover( CellGridCover.CreateGridCoverData_GridObject(m_cellGrid, this) );
+			var cover:CellGridCover = NewCover( CellGridCover.CreateGridCoverData_GridObject(m_cellGrid, go) );
+			go.SetGridCover(cover);
+			cover.SetGridObject(go);
+			
 			MoveGridObject(go, 0.0, 0.0);
+		}
+		
+		/* RemoveCoverFromGridObject
+		* removes the gridobject's cover from the grid (and the grid object)
+		* and removes the cover from the gridobject
+		*/
+		public function RemoveCoverFromGridObject(go:CellGridObject):void {
+			// detach if necessary
+			if (go.m_attachedTo) {
+				go.m_attachedTo.DetachGridObject(go);
+			}
+			
+			if (go.m_attachedList.length) {
+				go.DetachAllGridObjects();
+			}
+			
+			StockCover(go.m_cover);
+			go.ReleaseGridCover();
 		}
 		
 		/* MoveGridObject
@@ -134,11 +193,52 @@
 			}
 			RemoveContact(contact);
 			
+			
 			if (dv.length > Number.MIN_VALUE) {
-				go.Move(dv.x, dv.y);
+				
+				go.Move(m_cellGrid, dv.x, dv.y);
+				
+				for each (var goAbsorbed:CellGridObject in go.m_absorbedList) {
+					goAbsorbed.m_dv.x = 0;
+					goAbsorbed.m_dv.y = 0;
+					CalculateCollisionResult_Circle(goAbsorbed.m_dv, goAbsorbed, go.m_mass);
+				}
+				
+			}
+			
+			if (go.m_absorbedIn) {
+				var dvTemp:Point = CalculateCollisionResult_InnerCircle(NewPoint(0, 0), go, go.m_absorbedIn);
+				RemovePoint(dvTemp);
 			}
 			
 			go.m_isMoving = false; // reset our flag
+			
+			return dv;
+		}
+		
+		/* CalculateCollisionResult_InnerCircle
+		* calculates collision and moves the object so that the object is always
+		* in the outer object.  this is useful for absorbing objects into another
+		*/
+		private function CalculateCollisionResult_InnerCircle(dv:Point, go:CellGridObject, goOuter:CellGridObject):Point {
+			var localPoint:Point = NewPoint(go.m_localPoint.x + dv.x - goOuter.m_speed.x, go.m_localPoint.y + dv.y - goOuter.m_speed.y);
+			localPoint = m_cellGrid.CalculateDistanceVector_Local(localPoint, 
+			localPoint, 
+			go.m_col, 
+			go.m_row, 
+			goOuter.m_localPoint, 
+			goOuter.m_col, 
+			goOuter.m_row);
+			
+			var d:Number = goOuter.m_radius - go.m_radius - go.m_cellThickness;
+			if (localPoint.length > d) {
+				dv.x = localPoint.x;
+				dv.y = localPoint.y;
+				d = dv.length - d;
+				dv.normalize(d);
+				go.Move(m_cellGrid, dv.x, dv.y);
+			}
+			RemovePoint(localPoint);
 			
 			return dv;
 		}
@@ -155,7 +255,8 @@
 			var go2:CellGridObject = contact.object2;
 			
 			if ( (go2.m_mass < CellGridObject.c_maxMass) && 
-				(rcount <= c_maxRecursions) ) {
+			(!go.m_absorbedIn) &&
+			(rcount <= c_maxRecursions) ) {
 				
 				// distribute weight
 				if (go2.m_mass <= CellGridObject.c_minMass) {
@@ -170,12 +271,12 @@
 				dist.y -= contact.overlap.y;
 				
 				if (dist.length > Number.MIN_VALUE) {
-					dist = CalculateCollisionResult_Circle(dist, go2, amass + go.m_mass, rcount+1); // ?????
+					dist = CalculateCollisionResult_Circle(dist, go2, amass + go.m_mass, rcount+1);
 					dist.x += contact.overlap.x; 
 					dist.y += contact.overlap.y;
 				} else {
-					dist.x = 0;
-					dist.y = 0;
+					dist.x = contact.overlap.x;
+					dist.y = contact.overlap.y;
 				}
 				
 			}
@@ -195,8 +296,8 @@
 				r = w1/(w1+w2);
 			}
 			
-			dist.x = contact.overlap.x * r;
-			dist.y = contact.overlap.y * r;
+			dist.x = contact.overlap.x * (1-r);
+			dist.y = contact.overlap.y * (1-r);
 			return dist;
 		}
 		
@@ -214,7 +315,9 @@
 				var go2:CellGridObject = gobjects[i];
 				if (!go2.m_isMoving) {
 					if ( CalculateContact(contact, go, localPoint, go2, i) ) {
-						return contact;
+						if (HandleAreas(go, go2) && HandleAbsorb(go2, go)) {
+							return contact;
+						}
 					}
 				}
 			}
@@ -227,7 +330,7 @@
 		/* CalculateContact
 		* calculates and generates the contact between two objects
 		*/
-		public function CalculateContact(contact:Object, go:CellGridObject, localPoint:Point, go2:CellGridObject, index:int = -1):Object {
+		private function CalculateContact(contact:Object, go:CellGridObject, localPoint:Point, go2:CellGridObject, index:int = -1):Object {
 			var dv:Point = m_cellGrid.CalculateDistanceVector_Local(contact.dv, localPoint, go.m_col, go.m_row, go2.m_localPoint, go2.m_col, go2.m_row);
 			var ds:Number = dv.x * dv.x + dv.y * dv.y;
 			var sr:Number = go.m_radius + go2.m_radius;
@@ -256,11 +359,46 @@
 			return null;
 		}
 		
+		/* HandleAreas
+		* handles when the objects collide and one is an area
+		*/
+		private function HandleAreas(go1:CellGridObject, go2:CellGridObject, secondPass:Boolean = false):Boolean {
+			if (go1.m_isArea && !go2.m_isArea && !go2.IsInArea(go1)) {
+				go1.AreaEnter(go2);
+				return false;
+			}
+			
+			return (secondPass || HandleAreas(go2, go1, true)) && !go1.m_isArea;
+		}
+		
+		/* HandleAbsorb
+		* handles when the objects collide and one is absorbing the other
+		*/
+		private function HandleAbsorb(go1:CellGridObject, go2:CellGridObject, secondPass:Boolean = false):Boolean {
+			if (go1.m_isAbsorbing && !go2.m_absorbedIn && !go1.m_isFull && go1.CanAbsorbRadius(go2.m_radius)) {
+				// remove from grid
+				RemoveCoverFromGridObject(go2);
+				// absorb
+				go1.Absorb(go2);
+				
+				// do collision detection right away
+				MoveGridObject(go2, 0, 0);
+				// update graphics
+				go1.Move(m_cellGrid, 0, 0);
+				
+				return false;
+			}
+			return (secondPass || HandleAbsorb(go2, go1, true));
+		}
+		
 		/* UpdatePerformanceStatistics
 		*/
 		public function UpdatePerformanceStatistics(pStats:CellPerformanceStatistics):CellPerformanceStatistics {
 			pStats.m_numStackContacts = m_contactStack.length;
 			pStats.m_numStackPoints = m_pointStack.length;
+			
+			pStats.m_numActiveCovers = m_numActiveCovers;
+			pStats.m_numStockCovers = m_stockCovers.length;
 			
 			pStats = m_cellGrid.UpdatePerformanceStatistics(pStats);
 			

@@ -32,7 +32,7 @@
 		
 		/* Constructor
 		*/
-		public function CellViewCover(viewCoverData:Object, bitmapManager:CellBitmapManager):void {
+		public function CellViewCover(cellGrid:CellGridLocations, viewCoverData:Object, bitmapManager:CellBitmapManager):void {
 			m_stockTiles = new Array();
 			
 			m_viewer = viewCoverData.viewer;
@@ -44,7 +44,7 @@
 			
 			m_bitmapManager = bitmapManager;
 			
-			super(viewCoverData);
+			super(cellGrid, viewCoverData);
 			
 		}
 		
@@ -91,8 +91,15 @@
 				objectTile = new Sprite();
 			}
 			
+			if (m_stockTiles.length) {
+				var topTile:Sprite = m_stockTiles.pop();
+			} else {
+				topTile = new Sprite();
+			}
+			
 			coverCell.gridTile = gridTile;
 			coverCell.objectTile = objectTile;
+			coverCell.topTile = topTile;
 			coverCell.x = X;
 			coverCell.y = Y;
 			
@@ -100,11 +107,14 @@
 			coverCell.gridTile.y = coverCell.y;
 			coverCell.objectTile.x = coverCell.x;
 			coverCell.objectTile.y = coverCell.y;
+			coverCell.topTile.x = coverCell.x;
+			coverCell.topTile.y = coverCell.y;
 			
 			DrawCellBorder(coverCell);
 			
 			m_viewer.AddGridTile(coverCell.gridTile);
 			m_viewer.AddObjectTile(coverCell.objectTile);
+			m_viewer.AddTopTile(coverCell.topTile);
 			
 			coverCell.cover = this;
 			
@@ -145,9 +155,20 @@
 					go.m_sprite = m_bitmapManager.SetGridObjectSprite(go);
 				}
 				
+				for each (var goAbsorbed:CellGridObject in go.m_absorbedList) {
+					if ( !m_bitmapManager.IsGridObjectSetSprite(goAbsorbed) ) {
+						goAbsorbed.m_sprite = m_bitmapManager.SetGridObjectSprite(goAbsorbed);
+					}
+				}
+				
 				UpdateGridObject(go);
 				
+				for each (goAbsorbed in go.m_absorbedList) {
+					go.m_sprite.addChild( goAbsorbed.m_sprite );
+				}
+				
 				coverCell.objectTile.addChild( go.m_sprite );
+				
 				
 				m_numGridObjects++;
 				
@@ -160,8 +181,15 @@
 		* removes the grid object from the tile, but also adds to another existing tile if needed.
 		* this helps with keeping grid objects in view
 		*/
-		private function UnregisterGridObject(coverCell:Object, go:CellGridObject):void {
+		private function UnregisterGridObject(coverCell:Object, go:CellGridObject, removeAbsorbed:Boolean = true):void {
 			if (go.m_registered == coverCell) {
+				
+				if (removeAbsorbed) {
+					for each (var goAbsorbed:CellGridObject in go.m_absorbedList) {
+						go.m_sprite.removeChild( goAbsorbed.m_sprite );
+					}
+				}
+				
 				go.m_registered.objectTile.removeChild( go.m_sprite );
 				go.m_registered = null;
 				
@@ -182,12 +210,26 @@
 		* updates the sprite and possibly other things about the grid object
 		*/
 		public function UpdateGridObject(go:CellGridObject):void {
-			if (go.m_registered) {
-				go.m_dv = m_cellGrid.CalculateDistanceVector_CellToLocal(go.m_dv, go.m_registered.cell, go.m_localPoint, go.m_col, go.m_row);
+			go.m_dv = m_cellGrid.CalculateDistanceVector_CellToLocal(go.m_dv, go.m_registered.cell, go.m_localPoint, go.m_col, go.m_row);
+			
+			go.m_sprite.x = -go.m_dv.x;
+			go.m_sprite.y = -go.m_dv.y;
+			
+			for each (var goAbsorbed:CellGridObject in go.m_absorbedList) {
+				goAbsorbed.m_dv = m_cellGrid.CalculateDistanceVector_GridObjects(goAbsorbed.m_dv, go, goAbsorbed);
 				
-				go.m_sprite.x = -go.m_dv.x;
-				go.m_sprite.y = -go.m_dv.y;
+				goAbsorbed.m_sprite.x = goAbsorbed.m_dv.x;
+				goAbsorbed.m_sprite.y = goAbsorbed.m_dv.y;
 			}
+		}
+		
+		/* RedrawGridObject
+		* redraws the grid object
+		*/
+		public function RedrawGridObject(go:CellGridObject):void {
+			var coverCell:Object = go.m_registered;
+			UnregisterGridObject(coverCell, go, false);
+			RegisterGridObject(coverCell, go);
 		}
 		
 		/* RemoveCoverCell
@@ -203,15 +245,26 @@
 			}
 			
 			coverCell.objectTile.graphics.clear();
-			while(coverCell.gridTile.numChildren) {
-				coverCell.gridTile.removeChild(coverCell.gridTile.getChildAt(0));
+			while(coverCell.objectTile.numChildren) {
+				coverCell.objectTile.removeChild(coverCell.objectTile.getChildAt(0));
+			}
+			
+			coverCell.topTile.graphics.clear();
+			while(coverCell.topTile.numChildren) {
+				coverCell.topTile.removeChild(coverCell.topTile.getChildAt(0));
 			}
 			
 			m_viewer.RemoveGridTile(coverCell.gridTile);
 			m_viewer.RemoveObjectTile(coverCell.objectTile);
+			m_viewer.RemoveTopTile(coverCell.topTile);
 			
 			m_stockTiles.push(coverCell.gridTile);
 			m_stockTiles.push(coverCell.objectTile);
+			m_stockTiles.push(coverCell.topTile);
+			
+			coverCell.gridTile = null;
+			coverCell.objectTile = null;
+			coverCell.topTile = null;
 			
 			m_numTiles--;
 		}

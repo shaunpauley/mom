@@ -16,9 +16,13 @@
 		public var m_numGridCells:int;
 		public var m_numGridCellsOccupiedByObjects:int;
 		public var m_numGridCellsOccupiedByCovers:int;
-		public var m_numStockGridCells:int;
 		public var m_numGridColumns:int;
 		public var m_numGridRows:int;
+		public var m_numActiveCovers:int;
+		public var m_numActiveCoverCells:int;
+		public var m_numStockGridCells:int;
+		public var m_numStockCovers:int;
+		public var m_numStockCoverCells:int;
 		
 		// grid locations
 		public var m_gridCellWidth:Number;
@@ -116,24 +120,33 @@
 			m_data += "\tnum grid cells: " + m_numGridCells + "\n";
 			m_data += "\tnum objects occupying grid cells: " + m_numGridCellsOccupiedByObjects + "\n";
 			m_data += "\tnum covers occupying grid cells: " + m_numGridCellsOccupiedByCovers + "\n";
-			m_data += "\tnum stock grid cells: " + m_numStockGridCells + "\n";
 			m_data += "\tnum grid columns: " + m_numGridColumns + "\n";
 			m_data += "\tnum grid rows: " + m_numGridRows + "\n";
+			m_data += "\tnum active cover cells: " + m_numActiveCoverCells + "\n";
+			m_data += "\tnum stock grid cells: " + m_numStockGridCells + "\n";
+			m_data += "\tnum stock cover cells: " + m_numStockCoverCells + "\n";
+			
 			m_data += "grid locations:\n";
 			m_data += "\tgrid cell width: " + m_gridCellWidth.toFixed(1) + "\n";
 			m_data += "\tgrid cell height: " + m_gridCellHeight.toFixed(1) + "\n";
 			m_data += "\tgrid width: " + m_gridWidth.toFixed(1) + "\n";
 			m_data += "\tgrid height: " + m_gridHeight.toFixed(1) + "\n";
+			
 			m_data += "physics:\n";
 			m_data += "\tnum stack contacts: " + m_numStackContacts + "\n";
 			m_data += "\tnum stack points: " + m_numStackPoints + "\n";
+			m_data += "\tnum active covers: " + m_numActiveCovers + "\n";
+			m_data += "\tnum stock covers: " + m_numStockCovers + "\n";
+			
 			m_data += "view cover:\n";
 			m_data += "\tnum stock tiles: " + m_numStockTiles + "\n";
 			m_data += "\tnum view tiles: " + m_numViewTiles + "\n";
 			m_data += "\tnum view grid objects: " + m_numViewGridObjects + "\n";
+			
 			m_data += "bitmap manager:\n";
 			m_data += "\tnum bitmap library entries: " + m_numBitmapLibraryEntries + "\n";
 			m_data += "\tnum movie clips: " + m_numMovieClips + "\n";
+			
 			m_data += "world worker:\n";
 			m_data += "\tnum grid objects under work cover: " + m_numWorkingGridObjects + "\n";
 			m_data += "\tnum full time workers: " + m_numWorkingFullTimers + "\n";

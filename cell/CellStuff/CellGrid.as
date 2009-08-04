@@ -14,6 +14,8 @@ package CellStuff {
 		protected var m_rows:int;
 		
 		private var m_stockCells:Array;
+		private var m_stockCovers:Array;
+		private var m_stockCoverCells:Array;
 		
 		private var m_cells:Array;
 		
@@ -21,6 +23,8 @@ package CellStuff {
 		
 		private var m_numOccupiedByObjects:int;
 		private var m_numOccupiedByCovers:int;
+		
+		private var m_numActiveCoverCells:int;
 		
 		// consts
 		private static const c_defaultCols:Number = 20;
@@ -31,6 +35,8 @@ package CellStuff {
 		public function CellGrid(gridData:Object):void {
 			// init
 			m_stockCells = new Array();
+			m_stockCovers = new Array();
+			m_stockCoverCells = new Array();
 			
 			m_cells = new Array();
 			
@@ -57,6 +63,8 @@ package CellStuff {
 			
 			m_numOccupiedByObjects = 0;
 			m_numOccupiedByCovers = 0;
+			
+			m_numActiveCoverCells = 0;
 			
 			for (var r:int = 0; r < m_rows; ++r) {
 				for (var c:int = 0; c < m_cols; ++c) {
@@ -333,6 +341,25 @@ package CellStuff {
 			m_stockCells.push(gridCell);
 		}
 		
+		/* NewCoverCell
+		* grabs a new covercelll from the stock, if none, then creates a new object
+		*/
+		public function NewCoverCell():Object {
+			m_numActiveCoverCells++;
+			if (m_stockCoverCells.length) {
+				return m_stockCoverCells.pop();
+			}
+			return new Object();
+		}
+		
+		/* StockCoverCell
+		* pushes the existing covercell on the stock
+		*/
+		public function StockCoverCell(coverCell:Object):void {
+			m_stockCoverCells.push(coverCell);
+			m_numActiveCoverCells--;
+		}
+		
 		/* FlushStock
 		* flushes the stock for garbage collection 
 		*/
@@ -340,6 +367,11 @@ package CellStuff {
 			while(m_stockCells.length) {
 				m_stockCells.pop();
 			}
+			
+			while(m_stockCoverCells.length) {
+				m_stockCoverCells.pop();
+			}
+			
 		}
 		
 		
@@ -383,9 +415,11 @@ package CellStuff {
 			pStats.m_numGridCells = m_cells.length;
 			pStats.m_numGridCellsOccupiedByObjects = m_numOccupiedByObjects;
 			pStats.m_numGridCellsOccupiedByCovers = m_numOccupiedByCovers;
-			pStats.m_numStockGridCells = m_stockCells.length;
 			pStats.m_numGridColumns = m_cols;
 			pStats.m_numGridRows = m_rows;
+			pStats.m_numActiveCoverCells = m_numActiveCoverCells;
+			pStats.m_numStockGridCells = m_stockCells.length;
+			pStats.m_numStockCoverCells = m_stockCoverCells.length;
 			
 			return pStats;
 		}
