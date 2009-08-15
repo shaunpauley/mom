@@ -40,6 +40,42 @@ package CellStuff {
 			
 		}
 		
+		/* AddColumns
+		* overrided to update the grid Width
+		*/
+		protected override function AddColumns(numColumns:int):void {
+			super.AddColumns(numColumns);
+			m_gridWidth = m_cols*m_cellWidth;
+			m_gridWidthHalf = m_gridWidth/2;
+		}
+		
+		/* AddRows
+		* overrided to update the grid Height
+		*/
+		protected override function AddRows(numRows:int):void {
+			super.AddRows(numRows);
+			m_gridHeight = m_rows*m_cellHeight;
+			m_gridHeightHalf = m_gridHeight/2;
+		}
+		
+		/* RemoveColumn
+		* overrided to update the grid Width
+		*/
+		protected override function RemoveColumn(c:int):void {
+			super.RemoveColumn(c);
+			m_gridWidth = m_cols*m_cellWidth;
+			m_gridWidthHalf = m_gridWidth/2;
+		}
+		
+		/* RemoveRow
+		* overrided to update the grid Height
+		*/
+		protected override function RemoveRow(r:int):void {
+			super.RemoveRow(r);
+			m_gridHeight = m_rows*m_cellHeight;
+			m_gridHeightHalf = m_gridHeight/2;
+		}
+		
 		/* LocalToWorld
 		* converts the point from local grid coordinates to world coordinates with respect
 		* to the top left corner of the grid
@@ -56,14 +92,24 @@ package CellStuff {
 		* even if the point is outside of the grid due to wrapping
 		*/
 		public function GetColFromWorld(p:Point):int {
-			return (p.x/m_cellWidth)%m_cols;
+			var col:int = Math.floor(p.x/m_cellWidth);
+			while (col < 0) {
+				col += m_cols;
+			}
+			
+			return col%m_cols;
 		}
 		
 		/* GetRowFromWorld
 		* returns the cell row position from a world point
 		*/
 		public function GetRowFromWorld(p:Point):int {
-			return (p.y/m_cellHeight)%m_rows;
+			var row:int = Math.floor(p.y/m_cellHeight);
+			while (row < 0) {
+				row += m_rows;
+			}
+			
+			return row%m_rows;
 		}
 		
 		/* WorldToLocal
@@ -123,8 +169,8 @@ package CellStuff {
 		* calculates the distance vector using a gridCell and local point
 		*/
 		public function CalculateDistanceVector_CellToLocal(dv:Point, cell:Object, p:Point, col:int, row:int):Point {
-			var dx:Number = -p.x + (cell.col - col)*m_cellWidth;
-			var dy:Number = -p.y + (cell.row - row)*m_cellHeight;
+			var dx:Number = p.x + (col - cell.col)*m_cellWidth;
+			var dy:Number = p.y + (row - cell.row)*m_cellHeight;
 			
 			return CalculateDistanceVector(dv, dx, dy);
 		}
@@ -223,6 +269,10 @@ package CellStuff {
 			return p;
 		}
 		
+		public function CalculateGridObjectLocal(go:CellGridObject):void {
+			MoveGridObject(go, 0, 0);
+		}
+		
 		/* MoveGridObject
 		* moves a grid object localy
 		* I wonder if this is slower than a world conversion
@@ -262,12 +312,34 @@ package CellStuff {
 			
 		}
 		
+		/* ShrinkGrid
+		* shrinks the grid down to the startcell and the endcell.
+		* this override updates the grid dimensions
+		*/
+		public override function ShrinkGrid(startCell:Object, endCell:Object):void {
+			super.ShrinkGrid(startCell, endCell);
+			
+			m_gridWidth = m_cols*m_cellWidth;
+			m_gridHeight = m_rows*m_cellHeight;
+			
+			m_gridWidthHalf = m_gridWidth/2;
+			m_gridHeightHalf = m_gridHeight/2;
+			
+		}
+		
+		
 		/*
 		* GridDataObject
 		*/
 		public static function UpdateGridLocationsDataFull(gridData:Object, cellWidth:Number, cellHeight:Number):Object {
 			gridData.cellWidth = cellWidth;
 			gridData.cellHeight = cellHeight;
+			return gridData;
+		}
+		
+		public static function GenerateGridLocationsDataDefaults(gridData:Object):Object {
+			gridData.cellWidth = c_defaultCellWidth;
+			gridData.cellHeight = c_defaultCellHeight;
 			return gridData;
 		}
 		

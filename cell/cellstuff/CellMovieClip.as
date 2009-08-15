@@ -93,6 +93,13 @@
 				m_currentFrame = 1;
 			}
 		}
+		
+		/* CurrentFrame
+		* returns the current frame
+		*/
+		public function get currentFrame():int {
+			return m_currentFrame;
+		}
 	}
 	
 }

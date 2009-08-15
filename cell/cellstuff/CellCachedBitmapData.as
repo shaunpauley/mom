@@ -28,7 +28,7 @@
 			
 			var rect:Rectangle = mc.getRect(mc);
 			
-			for (var i:int = 1; i <= mc.totalFrames; ++i)
+			for (var i:int = 2; i <= mc.totalFrames; ++i)
 			{
 				mc.gotoAndStop(i)
 				

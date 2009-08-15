@@ -138,12 +138,27 @@
 		*/
 		public function CreateCoverAndAddToGrid(go:CellGridObject, localPoint:Point, col:int, row:int):void {
 			go.SetLocal(localPoint, col, row);
-			//m_cover = new CellGridCover( CellGridCover.CreateGridCoverData_GridObject(m_cellGrid, this) );
+			m_cellGrid.CalculateGridObjectLocal(go);
+			
 			var cover:CellGridCover = NewCover( CellGridCover.CreateGridCoverData_GridObject(m_cellGrid, go) );
 			go.SetGridCover(cover);
+			
 			cover.SetGridObject(go);
 			
 			MoveGridObject(go, 0.0, 0.0);
+		}
+		
+		/* AddLevelObjects
+		* adds all the objects for a level based on the level data given
+		*/
+		public function AddLevelObjects(objectData:Object):void {
+			for each (var goDefaultData:Object in objectData.defaultObjects) {
+				for (var i:int = 0; i < goDefaultData.numCopies; i++) {
+					var goData:Object = CellGridObject.CreateGridObjectRandomData(goDefaultData);
+					var go:CellGridObject = new CellGridObject(goData);
+					CreateCoverAndAddToGrid(go, go.m_localPoint, go.m_col, go.m_row);
+				}
+			}
 		}
 		
 		/* RemoveCoverFromGridObject
@@ -199,9 +214,8 @@
 				go.Move(m_cellGrid, dv.x, dv.y);
 				
 				for each (var goAbsorbed:CellGridObject in go.m_absorbedList) {
-					goAbsorbed.m_dv.x = 0;
-					goAbsorbed.m_dv.y = 0;
-					CalculateCollisionResult_Circle(goAbsorbed.m_dv, goAbsorbed, go.m_mass);
+					var dvAbsorbed:Point = CalculateCollisionResult_Circle(NewPoint(), goAbsorbed, go.m_mass);
+					RemovePoint(dvAbsorbed);
 				}
 				
 			}
@@ -375,16 +389,34 @@
 		* handles when the objects collide and one is absorbing the other
 		*/
 		private function HandleAbsorb(go1:CellGridObject, go2:CellGridObject, secondPass:Boolean = false):Boolean {
-			if (go1.m_isAbsorbing && !go2.m_absorbedIn && !go1.m_isFull && go1.CanAbsorbRadius(go2.m_radius)) {
+			if (go1.m_isAbsorbing && !go1.m_isFull && go1.CanAbsorbRadius(go2.m_radius)) {
 				// remove from grid
-				RemoveCoverFromGridObject(go2);
+				
+				if (go2.m_cover) {
+					RemoveCoverFromGridObject(go2);
+				} else if (go2.m_absorbedIn) {
+					
+					
+					if (go2.m_registered) {
+						go2.m_registered.cover.UnregisterGridObject(go2.m_registered, go2);
+					}
+					
+					var absorbedIn:CellGridObject = go2.m_absorbedIn;
+					
+					var i:int = absorbedIn.m_absorbedList.indexOf(go2);
+					if (i > -1) {
+						absorbedIn.m_absorbedList.splice(i, 1);
+					} else {
+						throw( new Error("cannot remove from absorbed list because it doesn't exist") );
+					}
+					
+				}
+				
 				// absorb
 				go1.Absorb(go2);
 				
 				// do collision detection right away
 				MoveGridObject(go2, 0, 0);
-				// update graphics
-				go1.Move(m_cellGrid, 0, 0);
 				
 				return false;
 			}

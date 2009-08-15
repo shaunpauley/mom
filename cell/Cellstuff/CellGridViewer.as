@@ -191,6 +191,10 @@ package CellStuff {
 			return m_viewCover.GetWorldCenter();
 		}
 		
+		public function SyncLocation():void {
+			m_viewCover.SyncLocation();
+		}
+		
 		/* SetWorkCover
 		* sets the work cover
 		*/

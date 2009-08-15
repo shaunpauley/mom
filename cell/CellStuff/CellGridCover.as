@@ -11,9 +11,9 @@
 		protected var m_cellGrid:CellGridLocations;
 		
 		private var m_gridObject:CellGridObject;
-		private var m_gridObjectSet:Dictionary;
+		protected var m_gridObjectSet:Dictionary;
 		private var m_gridObjectList:Array;
-		private var m_isGridObectListChanged:Boolean;
+		protected var m_isGridObjectListChanged:Boolean;
 		
 		protected var m_startOffset:Point;
 		private var m_endOffset:Point;
@@ -27,7 +27,7 @@
 		protected var m_topLeft:Object;
 		private var m_topRight:Object;
 		private var m_bottomLeft:Object;
-		private var m_bottomRight:Object;
+		protected var m_bottomRight:Object;
 		
 		protected var m_worldCenter:Point;
 		
@@ -41,6 +41,8 @@
 			
 			m_worldCenter = new Point(0, 0);
 			
+			m_gridObject = null;
+			
 			ResetCover(coverData);
 		}
 		
@@ -48,7 +50,6 @@
 		* resets the cover so it can be remade
 		*/
 		public function ResetCover(coverData:Object):void {
-			m_gridObject = null;
 			
 			for each (var key:* in m_gridObjectSet) {
 				delete m_gridObjectSet[key];
@@ -58,7 +59,7 @@
 				m_gridObjectList.pop();
 			}
 			
-			m_isGridObectListChanged = false;
+			m_isGridObjectListChanged = false;
 			
 			m_startOffset = coverData.startLocal;
 			m_endOffset = m_startOffset.clone();
@@ -150,7 +151,7 @@
 		/* AddColumn
 		* add a column starting at current and to the left if not specified
 		*/
-		private function AddColumn(current:Object, isLeft:Boolean = true):void {
+		protected function AddColumn(current:Object, isLeft:Boolean = true):void {
 			var previous:Object = null;
 			
 			while (current) {
@@ -171,7 +172,7 @@
 		/* AddRow
 		* adds a row starting at the current and to the top if not specified
 		*/
-		private function AddRow(current:Object, isTop:Boolean = true):void {
+		protected function AddRow(current:Object, isTop:Boolean = true):void {
 			var previous:Object = null;
 			
 			while (current) {
@@ -426,7 +427,7 @@
 				m_gridObjectSet[go] += 1;
 			} else {
 				m_gridObjectSet[go] = int(1);
-				m_isGridObectListChanged = true;
+				m_isGridObjectListChanged = true;
 			}
 		}
 		
@@ -438,7 +439,7 @@
 				m_gridObjectSet[go] -= 1;
 				if (m_gridObjectSet[go] <= 0) {
 					delete m_gridObjectSet[go];
-					m_isGridObectListChanged = true;
+					m_isGridObjectListChanged = true;
 				}
 			}
 		}
@@ -447,14 +448,14 @@
 		* returns the array of each grid object (not itself) under the cover
 		*/
 		public function GridObjects():Array {
-			if (m_isGridObectListChanged) {
+			if (m_isGridObjectListChanged) {
 				while (m_gridObjectList.length) {
 					m_gridObjectList.pop();
 				}
 				for (var go:* in m_gridObjectSet) {
 					m_gridObjectList.push(go);
 				}
-				m_isGridObectListChanged = false;
+				m_isGridObjectListChanged = false;
 			}
 			
 			return m_gridObjectList;
@@ -464,37 +465,42 @@
 		* removes the entire cover and the grid object from the grid.
 		*/
 		public function RemoveFromGrid():void {
-			// shrink to remove all covercells but one
-			ShrinkCover(m_width, m_height);
+			LiftFromGrid();
 			
-			// remove the last cover cell
-			RemoveCoverCell(m_topLeft);
+			// remove our object
+			m_gridObject = null;
+		}
+		
+		public function LiftFromGrid():void {
+			var tempArray:Array = new Array();
+			
+			var currentRow:Object = m_topLeft;
+			while (currentRow) {
+				var current:Object = currentRow;
+				while (current) {
+					tempArray.push(current);
+					current = current.right;
+				}
+				currentRow = currentRow.bottom;
+			}
+			
+			while(tempArray.length) {
+				RemoveCoverCell( tempArray.pop() );
+			}
 			
 			// empty our corner links
 			m_topLeft = null;
 			m_topRight = null;
 			m_bottomLeft = null;
 			m_bottomRight = null;
+		}
+		
+		public function SetToGrid():void {
+			var startCol:int = m_cellGrid.GetColFromWorld(m_worldCenter);
+			var startRow:int = m_cellGrid.GetRowFromWorld(m_worldCenter);
+			var gridCell:Object = m_cellGrid.GetGridCell(startCol, startRow);
 			
-			/*
-			// loop through all the cells
-			var currentRow:Object = m_topLeft;
-			while (currentRow) {
-				var current:Object = currentRow;
-				while (current) {
-					if (m_gridObject) {
-						m_cellGrid.RemoveGridObjectAndCoverCell(current.cell, m_gridObject, current);
-					} else {
-						m_cellGrid.RemoveCoverCell(current.cell, current);
-					}
-					current = current.right;
-				}
-				currentRow = currentRow.bottom;
-			}
-			*/
-			
-			// remove our object
-			m_gridObject = null;
+			CoverInit(gridCell);
 		}
 		
 		/* CalculateCenterWorld
@@ -505,7 +511,7 @@
 			p.x = m_startOffset.x + m_width/2 + m_topLeft.cell.col*m_cellWidth;
 			p.y = m_startOffset.y + m_height/2 + m_topLeft.cell.row*m_cellHeight;
 			
-			return p;
+			return m_cellGrid.CalculateWorld(p);
 		}
 		
 		/* GetWorldCenter
@@ -513,6 +519,28 @@
 		*/
 		public function GetWorldCenter():Point {
 			return m_worldCenter;
+		}
+		
+		/* ResetWorldCenter
+		* resets the world center of the cover
+		*/
+		private function ResetWorldCenter():void {
+			m_worldCenter = CalculateCenterWorld(m_worldCenter);
+		}
+		
+		/* SyncLocation
+		* syncs the grid object's col and row according to the grid cover
+		* also syncs the world center for the grid cover
+		*/
+		public function SyncLocation():void {
+			ResetWorldCenter();
+			if (m_gridObject) {
+				m_gridObject.m_col = m_cellGrid.GetColFromWorld(m_worldCenter);
+				m_gridObject.m_row = m_cellGrid.GetRowFromWorld(m_worldCenter);
+				m_gridObject.m_localPoint.x = m_worldCenter.x;
+				m_gridObject.m_localPoint.y = m_worldCenter.y;
+				m_gridObject.m_localPoint = m_cellGrid.WorldToLocal(m_gridObject.m_localPoint, m_gridObject.m_col, m_gridObject.m_row);
+			}
 		}
 		
 		/* Draw
@@ -538,10 +566,10 @@
 			str += "\tso:" + m_startOffset.x + ", " + m_startOffset.y + "\n";
 			str += "\teo:" + m_endOffset.x + ", " + m_endOffset.y + "\n";
 			str += "\twh:" + m_width + ", " + m_height + "\n";
-			str += "\ttopLeft: " + m_topLeft.cell.id + ": " + m_topLeft.x + ", " + m_topLeft.y + "\n";
-			str += "\ttopRight: " + m_topRight.cell.id + ": " + m_topRight.x + ", " + m_topRight.y + "\n";
-			str += "\tbottomLeft: " + m_bottomLeft.cell.id + ": " + m_bottomLeft.x + ", " + m_bottomLeft.y + "\n";
-			str += "\tbottomRight: " + m_bottomRight.cell.id + ": " + m_bottomRight.x + ", " + m_bottomRight.y + "\n";
+			str += "\ttopLeft: " + m_topLeft.cell.id + ": " + m_topLeft.x + ", " + m_topLeft.y + " (c,r): " + m_topLeft.cell.col + ", " + m_topLeft.cell.row + "\n";
+			str += "\ttopRight: " + m_topRight.cell.id + ": " + m_topRight.x + ", " + m_topRight.y + " (c,r): " + m_topRight.cell.col + ", " + m_topRight.cell.row + "\n";
+			str += "\tbottomLeft: " + m_bottomLeft.cell.id + ": " + m_bottomLeft.x + ", " + m_bottomLeft.y + " (c,r): " + m_bottomLeft.cell.col + ", " + m_bottomLeft.cell.row + "\n";
+			str += "\tbottomRight: " + m_bottomRight.cell.id + ": " + m_bottomRight.x + ", " + m_bottomRight.y + " (c,r): " + m_bottomRight.cell.col + ", " + m_bottomRight.cell.row + "\n";
 			str += "\ttiles:\n";
 			
 			var currentTile:Object = m_topLeft;
@@ -599,7 +627,13 @@
 		public static function CreateGridCoverData_GridObject(cellGrid:CellGridLocations, go:CellGridObject):Object {
 			var p:Point = cellGrid.LocalToWorld(go.m_localPoint.clone(), go.m_col, go.m_row);
 			p.x -= go.m_radius;
+			if (p.x < 0) {
+				p.x += cellGrid.GetGridWidth();
+			}
 			p.y -= go.m_radius;
+			if (p.y < 0) {
+				p.y += cellGrid.GetGridHeight();
+			}
 			
 			var col:int = cellGrid.GetColFromWorld(p);
 			var row:int = cellGrid.GetRowFromWorld(p);

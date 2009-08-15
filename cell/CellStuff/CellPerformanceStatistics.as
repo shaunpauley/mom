@@ -42,6 +42,7 @@
 		// bitmap manager
 		public var m_numBitmapLibraryEntries:int;
 		public var m_numMovieClips:int;
+		public var m_numMovieClipsIssues:int;
 		
 		// world worker
 		public var m_numWorkingGridObjects:int;
@@ -146,6 +147,7 @@
 			m_data += "bitmap manager:\n";
 			m_data += "\tnum bitmap library entries: " + m_numBitmapLibraryEntries + "\n";
 			m_data += "\tnum movie clips: " + m_numMovieClips + "\n";
+			m_data += "\tnum movie clips issued: " + m_numMovieClipsIssues + "\n";
 			
 			m_data += "world worker:\n";
 			m_data += "\tnum grid objects under work cover: " + m_numWorkingGridObjects + "\n";
